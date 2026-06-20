@@ -7,11 +7,8 @@ assets = { directory = "./public" }
 
 [[kv_namespaces]]
 binding = "RANKING_KV"
-id = "ranking-kv-id"
-preview_id = "ranking-kv-preview"
+id = "932e936290664726be3d082e69315bbe"
+preview_id = "932e936290664726be3d082e69315bbe"
 
-[[triggers]]
-crons = ["0 12 * * 1-4"]
-
-[[triggers]]
-crons = ["45 16 * * 1-4"]
+[triggers]
+crons = ["0 12 * * 1-4", "45 16 * * 1-4"]
