@@ -302,3 +302,7 @@ select.input { cursor: pointer; }
   .stu-grid { grid-template-columns: repeat(2, 1fr); }
   .topbar-title { font-size: 13px; }
 }
+
+/* ====== 登录按钮 ====== */
+.topbar-login { color: var(--green); border-color: rgba(42,157,143,0.3); }
+.topbar-login:hover { background: rgba(42,157,143,0.15); border-color: var(--green); }

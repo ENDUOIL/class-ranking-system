@@ -7,47 +7,20 @@
 <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<!-- ========== 登录页 ========== -->
-<div id="loginPage" class="page active">
-  <div class="login-card">
-    <div class="login-title">🏆 25.1班操行排位赛</div>
-    <div class="login-subtitle">积分管理系统</div>
-    <div class="login-tabs">
-      <button class="login-tab active" data-role="admin" onclick="switchLoginTab('admin')">管理员登录</button>
-      <button class="login-tab" data-role="guest" onclick="switchLoginTab('guest')">访客浏览</button>
-    </div>
-    <div id="adminLoginForm">
-      <div class="input-group">
-        <label>用户名</label>
-        <input type="text" id="loginUser" placeholder="输入用户名" autocomplete="off">
-      </div>
-      <div class="input-group">
-        <label>密码</label>
-        <input type="password" id="loginPass" placeholder="输入密码" autocomplete="off">
-      </div>
-      <button class="btn btn-primary btn-login" onclick="doLogin()">登 录</button>
-      <div id="loginError" class="login-error"></div>
-    </div>
-    <div id="guestLoginForm" style="display:none">
-      <p style="color:#aaa;font-size:13px;text-align:center;margin:20px 0;">访客模式下仅可查看积分排名与操作日志</p>
-      <button class="btn btn-secondary btn-login" onclick="enterGuestMode()">进入访客模式</button>
-    </div>
-  </div>
-</div>
 
-<!-- ========== 主应用 ========== -->
-<div id="appPage" class="page" style="display:none">
+<div id="appPage" class="app-container">
   <!-- 顶部导航 -->
   <div class="topbar">
     <div class="topbar-left">
       <span class="topbar-title">🏆 25.1班操行排位赛</span>
-      <span id="userBadge" class="user-badge"></span>
+      <span id="userBadge" class="user-badge">访客</span>
     </div>
     <div class="topbar-right">
       <button class="topbar-btn" onclick="showCalendarModal()" title="日历配置">📅 日历</button>
       <button class="topbar-btn" onclick="showLogModal()" title="操作日志">📋 日志</button>
-      <span id="roleBadge" class="role-badge"></span>
-      <button class="topbar-btn topbar-logout" onclick="doLogout()">退出</button>
+      <span id="roleBadge" class="role-badge guest">👤 访客</span>
+      <button id="loginBtn" class="topbar-btn topbar-login" onclick="showLoginModal()">登录</button>
+      <button id="logoutBtn" class="topbar-btn topbar-logout" style="display:none" onclick="doLogout()">退出</button>
     </div>
   </div>
 
@@ -69,9 +42,14 @@
         </div>
       </div>
 
-      <!-- 管理工具区 -->
+      <!-- 学生网格（所有人可见） -->
+      <div class="card">
+        <div class="section-title">👥 学生积分</div>
+        <div id="stuGrid" class="stu-grid"></div>
+      </div>
+
+      <!-- 管理工具区（仅管理员可见） -->
       <div id="adminTools" class="admin-tools" style="display:none">
-        <!-- 学生管理（超级管理员专属） -->
         <div id="superAdminSection" class="card" style="display:none">
           <div class="section-title">👑 超级管理员 - 学生管理</div>
           <div class="flex-row">
@@ -86,7 +64,6 @@
           </div>
         </div>
 
-        <!-- 管理员管理（超级管理员专属） -->
         <div id="adminMgmtSection" class="card" style="display:none">
           <div class="section-title">👥 管理员管理</div>
           <details>
@@ -109,7 +86,6 @@
           </details>
         </div>
 
-        <!-- 积分调整区 -->
         <div class="card">
           <div class="section-title">⚖️ 积分调整</div>
           <div class="flex-row">
@@ -117,7 +93,9 @@
             <button class="btn btn-small btn-select" onclick="selectAll(false)">全清</button>
             <span id="selectedCount" class="selected-count">已选 0 人</span>
           </div>
-          <div id="stuGrid" class="stu-grid"></div>
+          <div style="margin-top:6px;">
+            <span style="font-size:11px;color:var(--text-dim);">点击学生名字选中/取消</span>
+          </div>
           <div class="rule-area">
             <select id="ruleSelect" class="input">
               <optgroup label="🔴 违纪扣分">
@@ -144,7 +122,7 @@
                 <option value="-1">兑换：晚上手机权 | -1分</option>
                 <option value="-1">兑换：教室充电一次 | -1分</option>
               </optgroup>
-              <optgroup label="🤳 手机使用（不扣分免兑换）">
+              <optgroup label="🤳 手机使用（免扣分）">
                 <option value="PHONE_NOON">申请：中午不玩手机（免扣分）</option>
                 <option value="PHONE_EVENING">申请：晚上不玩手机（免扣分）</option>
               </optgroup>
@@ -152,16 +130,15 @@
                 <option value="10">【福利】本周表现优异加分 | +10分</option>
               </optgroup>
             </select>
-            <button class="btn btn-primary btn-full" onclick="applyRule()">确认提交</button>
+            <button class="btn btn-primary btn-full" onclick="applyRule()" id="applyRuleBtn">确认提交</button>
           </div>
           <div class="flex-row" style="margin-top:8px;">
             <input type="number" id="flexVal" class="input flex-1" placeholder="自定义分值">
             <input type="text" id="flexReason" class="input flex-2" placeholder="原因备注">
-            <button class="btn btn-small btn-gray" onclick="applyFlex()">自定义调整</button>
+            <button class="btn btn-small btn-gray" onclick="applyFlex()" id="applyFlexBtn">自定义调整</button>
           </div>
         </div>
 
-        <!-- 手机豁免操作区 -->
         <div class="card">
           <div class="section-title">📱 手机使用豁免管理</div>
           <div class="flex-row">
@@ -176,15 +153,36 @@
         </div>
       </div>
 
-      <!-- 底部赛季重置（超级管理员专属） -->
       <div id="resetSection" class="reset-area" style="display:none">
         <button class="reset-btn" onclick="resetSeason()">💥 终结赛季 · 全员复位15分</button>
       </div>
 
-      <!-- 分享栏 -->
       <div class="share-area">
         <button class="share-btn" onclick="shareRanks()">📢 生成班级排位分享战报</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 登录弹窗 ========== -->
+<div id="loginModal" class="modal" style="display:none">
+  <div class="modal-content" style="max-width:360px;">
+    <div class="modal-header">
+      <span>🔐 管理员登录</span>
+      <button class="modal-close" onclick="closeLoginModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group" style="margin-bottom:12px;">
+        <label style="display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;">请输入密码</label>
+        <input type="password" id="loginPassInput" class="input" style="width:100%;padding:12px;font-size:16px;" placeholder="输入密码" autocomplete="off">
+      </div>
+      <div class="flex-row" style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">
+        <span>超级管理员: yangjian1</span>
+        <span style="margin:0 6px;">|</span>
+        <span>管理员: 251</span>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doPasswordLogin()" style="padding:12px;font-size:15px;">登 录</button>
+      <div id="loginModalError" style="color:var(--red);font-size:13px;text-align:center;margin-top:8px;min-height:20px;"></div>
     </div>
   </div>
 </div>
@@ -212,7 +210,7 @@
         <button class="btn btn-small btn-danger" onclick="addCustomExclusion()">排除此日</button>
       </div>
       <div id="customExclusionList" class="tag-list"></div>
-      <div class="section-subtitle" style="margin-top:10px;">强制扣分日期（排除日但需要扣分）</div>
+      <div class="section-subtitle" style="margin-top:10px;">强制扣分日期</div>
       <div class="flex-row">
         <input type="date" id="customIncludeDate" class="input flex-1">
         <button class="btn btn-small btn-green" onclick="addCustomInclusion()">强制此日</button>

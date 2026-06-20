@@ -54,7 +54,11 @@ async function ensureInitialized(env) {
   const init = await env.RANKING_KV.get("_initialized");
   if (init === "yes") return;
   const superHash = await hashPassword("yangjian1");
-  const users = { super: { password: superHash, role: "super_admin", name: "超级管理员" } };
+  const adminHash2 = await hashPassword("251");
+const users = {
+  super: { password: superHash, role: "super_admin", name: "超级管理员" },
+  admin: { password: adminHash2, role: "admin", name: "管理员" }
+};
   await setKV(env, "users", users);
   await setKV(env, "students", DEFAULT_STUDENTS);
   const scores = {};
@@ -153,19 +157,21 @@ function isDeductionDay(dateStr, calendar) {
 // ============================================================
 app.post("/api/login", async (c) => {
   await ensureInitialized(c.env);
-  const { username, password } = await c.req.json();
-  if (!username || !password) return c.json({ error: "请输入用户名和密码" }, 400);
+  const { password } = await c.req.json();
+  if (!password) return c.json({ error: "请输入密码" }, 400);
   const users = await getKV(c.env, "users", {});
-  const user = users[username];
-  if (!user) return c.json({ error: "用户不存在" }, 401);
   const hashed = await hashPassword(password);
-  if (hashed !== user.password) return c.json({ error: "密码错误" }, 401);
+  let matchedUser = null, matchedUsername = null;
+  for (const [uname, udata] of Object.entries(users)) {
+    if (udata.password === hashed) { matchedUser = udata; matchedUsername = uname; break; }
+  }
+  if (!matchedUser) return c.json({ error: "密码错误" }, 401);
   const token = generateToken();
   const tokens = await getKV(c.env, "tokens", {});
-  tokens[token] = { username, role: user.role, name: user.name || username, loginTime: Date.now() };
+  tokens[token] = { username: matchedUsername, role: matchedUser.role, name: matchedUser.name || matchedUsername, loginTime: Date.now() };
   await setKV(c.env, "tokens", tokens);
-  await addLog(c.env, user, "登录系统", "成功登录");
-  return c.json({ token, user: { username, role: user.role, name: user.name || username } });
+  await addLog(c.env, matchedUser, "登录系统", "成功登录");
+  return c.json({ token, user: { username: matchedUsername, role: matchedUser.role, name: matchedUser.name || matchedUsername } });
 });
 
 // ============================================================
@@ -189,7 +195,7 @@ app.post("/api/logout", authMiddleware, async (c) => {
 // ============================================================
 // API - 获取学生列表
 // ============================================================
-app.get("/api/students", authMiddleware, async (c) => {
+app.get("/api/students", async (c) => {
   const students = await getKV(c.env, "students", DEFAULT_STUDENTS);
   return c.json({ students });
 });
@@ -230,7 +236,7 @@ app.delete("/api/students/:name", authMiddleware, superAdminOnly, async (c) => {
 // ============================================================
 // API - 获取积分
 // ============================================================
-app.get("/api/scores", authMiddleware, async (c) => {
+app.get("/api/scores", async (c) => {
   const scores = await getKV(c.env, "scores", {});
   const students = await getKV(c.env, "students", []);
   return c.json({ scores, students });
@@ -275,7 +281,7 @@ app.post("/api/scores/reset", authMiddleware, superAdminOnly, async (c) => {
 // ============================================================
 // API - 获取操作日志
 // ============================================================
-app.get("/api/logs", authMiddleware, async (c) => {
+app.get("/api/logs", async (c) => {
   const logs = await getKV(c.env, "logs", []);
   return c.json({ logs });
 });
@@ -283,7 +289,7 @@ app.get("/api/logs", authMiddleware, async (c) => {
 // ============================================================
 // API - 获取日历配置
 // ============================================================
-app.get("/api/calendar", authMiddleware, async (c) => {
+app.get("/api/calendar", async (c) => {
   const calendar = await getKV(c.env, "calendar", DEFAULT_CALENDAR);
   return c.json({ calendar });
 });
@@ -301,7 +307,7 @@ app.post("/api/calendar", authMiddleware, adminOnly, async (c) => {
 // ============================================================
 // API - 获取当天扣分状态
 // ============================================================
-app.get("/api/deductions/today", authMiddleware, async (c) => {
+app.get("/api/deductions/today", async (c) => {
   const today = getDateStr(new Date());
   const todayDeductions = await getKV(c.env, "todayDeductions", {});
   const deductions = todayDeductions[today] || { noon: false, evening: false };
@@ -311,7 +317,7 @@ app.get("/api/deductions/today", authMiddleware, async (c) => {
 // ============================================================
 // API - 获取今日扣分日历视图（近30天）
 // ============================================================
-app.get("/api/deductions/calendar-view", authMiddleware, async (c) => {
+app.get("/api/deductions/calendar-view", async (c) => {
   const calendar = await getKV(c.env, "calendar", DEFAULT_CALENDAR);
   const now = new Date();
   const days = [];
@@ -352,7 +358,7 @@ function checkPeriodExclusion(dateStr, calendar) {
 // ============================================================
 // API - 获取手机扣分豁免名单
 // ============================================================
-app.get("/api/phone-opt-out", authMiddleware, async (c) => {
+app.get("/api/phone-opt-out", async (c) => {
   const today = getDateStr(new Date());
   const phoneOptOuts = await getKV(c.env, "phoneOptOuts", {});
   const todayData = phoneOptOuts[today] || { noon: [], evening: [] };
@@ -525,3 +531,5 @@ export default {
     await handleScheduled(event, env, ctx);
   }
 };
+
+

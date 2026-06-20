@@ -12,9 +12,11 @@ async function api(path, opts = {}) {
   if (state.token) headers["Authorization"] = "Bearer " + state.token;
   try {
     const res = await fetch(API + path, { ...opts, headers });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "请求失败");
-    return data;
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "请求失败");
+    }
+    return await res.json();
   } catch (e) {
     if (e.message.includes("Failed to fetch")) throw new Error("无法连接到服务器");
     throw e;
@@ -22,58 +24,63 @@ async function api(path, opts = {}) {
 }
 
 // ============================================================
-// 登录
+// 初始化：默认游客模式
 // ============================================================
-function switchLoginTab(role) {
-  document.querySelectorAll(".login-tab").forEach(t => t.classList.remove("active"));
-  document.querySelector(`.login-tab[data-role="${role}"]`).classList.add("active");
-  document.getElementById("adminLoginForm").style.display = role === "admin" ? "block" : "none";
-  document.getElementById("guestLoginForm").style.display = role === "guest" ? "block" : "none";
-  document.getElementById("loginError").textContent = "";
-}
-
-async function doLogin() {
-  const username = document.getElementById("loginUser").value.trim();
-  const password = document.getElementById("loginPass").value;
-  if (!username || !password) return showLoginError("请输入用户名和密码");
-  try {
-    const data = await api("/api/login", { method: "POST", body: JSON.stringify({ username, password }) });
-    state.token = data.token;
-    state.user = data.user;
-    document.getElementById("loginError").textContent = "";
-    enterApp();
-  } catch (e) {
-    showLoginError(e.message);
-  }
-}
-
-function showLoginError(msg) {
-  document.getElementById("loginError").textContent = msg;
-}
-
-async function enterGuestMode() {
+(async function() {
   state.token = null;
   state.user = { username: "guest", role: "guest", name: "访客" };
-  enterApp();
+  try {
+    await loadApp();
+  } catch(e) {
+    console.error("加载失败", e);
+  }
+})();
+
+// ============================================================
+// 登录弹窗
+// ============================================================
+function showLoginModal() {
+  document.getElementById("loginModal").style.display = "flex";
+  const inp = document.getElementById("loginPassInput");
+  inp.value = "";
+  inp.focus();
+  document.getElementById("loginModalError").textContent = "";
 }
 
-async function enterApp() {
-  document.getElementById("loginPage").classList.remove("active");
-  document.getElementById("loginPage").style.display = "none";
-  document.getElementById("appPage").style.display = "flex";
-  await loadApp();
+function closeLoginModal() {
+  document.getElementById("loginModal").style.display = "none";
+}
+
+// 回车登录
+document.addEventListener("DOMContentLoaded", () => {
+  const inp = document.getElementById("loginPassInput");
+  if (inp) inp.addEventListener("keydown", e => { if (e.key === "Enter") doPasswordLogin(); });
+});
+
+async function doPasswordLogin() {
+  const password = document.getElementById("loginPassInput").value;
+  if (!password) return (document.getElementById("loginModalError").textContent = "请输入密码");
+  try {
+    const data = await api("/api/login", { method: "POST", body: JSON.stringify({ password }) });
+    state.token = data.token;
+    state.user = data.user;
+    document.getElementById("loginModalError").textContent = "";
+    closeLoginModal();
+    await loadApp();
+  } catch (e) {
+    document.getElementById("loginModalError").textContent = e.message;
+  }
 }
 
 async function doLogout() {
   if (state.token) {
     try { await api("/api/logout", { method: "POST" }); } catch {}
   }
-  state = { token: null, user: null, students: [], scores: {}, selected: new Set(), phoneOptOuts: { noon: [], evening: [] } };
-  document.getElementById("appPage").style.display = "none";
-  document.getElementById("loginPage").style.display = "flex";
-  document.getElementById("loginPage").classList.add("active");
-  document.getElementById("loginUser").value = "";
-  document.getElementById("loginPass").value = "";
+  state.token = null;
+  state.user = { username: "guest", role: "guest", name: "访客" };
+  state.selected.clear();
+  document.getElementById("loginPassInput").value = "";
+  await loadApp();
 }
 
 // ============================================================
@@ -82,18 +89,32 @@ async function doLogout() {
 async function loadApp() {
   try {
     const role = state.user.role;
-    // 用户标识
-    document.getElementById("userBadge").textContent = state.user.name || state.user.username;
+
+    // 更新 UI 状态
+    document.getElementById("userBadge").textContent = state.user.name || "访客";
     const badge = document.getElementById("roleBadge");
-    badge.textContent = role === "super_admin" ? "👑 超级管理员" : role === "admin" ? "🔧 管理员" : "👤 访客";
-    badge.className = "role-badge " + role;
+    if (role === "super_admin") { badge.textContent = "👑 超级管理员"; badge.className = "role-badge super_admin"; }
+    else if (role === "admin") { badge.textContent = "🔧 管理员"; badge.className = "role-badge admin"; }
+    else { badge.textContent = "👤 访客"; badge.className = "role-badge guest"; }
+
+    // 登录/登出按钮切换
+    document.getElementById("loginBtn").style.display = (role === "guest") ? "inline-block" : "none";
+    document.getElementById("logoutBtn").style.display = (role !== "guest") ? "inline-block" : "none";
 
     // 管理员工具可见性
-    document.getElementById("adminTools").style.display = (role === "super_admin" || role === "admin") ? "block" : "none";
+    const isAdmin = role === "super_admin" || role === "admin";
+    document.getElementById("adminTools").style.display = isAdmin ? "block" : "none";
     document.getElementById("superAdminSection").style.display = role === "super_admin" ? "block" : "none";
     document.getElementById("adminMgmtSection").style.display = role === "super_admin" ? "block" : "none";
     document.getElementById("resetSection").style.display = role === "super_admin" ? "block" : "none";
     document.getElementById("clearLogBtn").style.display = role === "super_admin" ? "inline-block" : "none";
+
+    // 访客模式禁用操作按钮
+    document.querySelectorAll("#applyRuleBtn, #applyFlexBtn, .phone-opt-btn").forEach(el => {
+      el.disabled = !isAdmin;
+      el.style.opacity = isAdmin ? "1" : "0.5";
+      el.style.cursor = isAdmin ? "pointer" : "not-allowed";
+    });
 
     // 加载数据
     const data = await api("/api/scores");
@@ -101,18 +122,20 @@ async function loadApp() {
     state.scores = data.scores;
 
     // 加载手机豁免
-    await refreshPhoneOptOut();
+    try { await refreshPhoneOptOut(); } catch {}
 
     // 渲染
     updateDateTime();
     renderRankings();
     renderStudentGrid();
     updateDeleteSelect();
-    updateAdminList();
-    updatePasswordSelect();
+    if (role === "super_admin") {
+      updateAdminList();
+      updatePasswordSelect();
+    }
     setInterval(updateDateTime, 10000);
   } catch (e) {
-    alert("加载失败：" + e.message);
+    console.error("加载失败", e);
   }
 }
 
@@ -165,9 +188,9 @@ function renderRankings() {
 function renderStudentGrid() {
   const grid = document.getElementById("stuGrid");
   const optOuts = state.phoneOptOuts || { noon: [], evening: [] };
-  const allOpted = new Set([...optOuts.noon, ...optOuts.evening]);
   const noonSet = new Set(optOuts.noon);
   const eveningSet = new Set(optOuts.evening);
+  const isGuest = state.user.role === "guest";
 
   grid.innerHTML = state.students.map(name => {
     const score = state.scores[name] ?? 15;
@@ -267,14 +290,12 @@ async function handlePhoneOptOut(slot) {
     if (action === "添加") {
       const newList = [...new Set([...optOuts[slot], ...names])];
       await api("/api/phone-opt-out", {
-        method: "POST",
-        body: JSON.stringify({ slot, names: newList })
+        method: "POST", body: JSON.stringify({ slot, names: newList })
       });
     } else {
       const filtered = optOuts[slot].filter(n => !names.includes(n));
       await api("/api/phone-opt-out", {
-        method: "POST",
-        body: JSON.stringify({ slot, names: filtered })
+        method: "POST", body: JSON.stringify({ slot, names: filtered })
       });
     }
     await refreshPhoneOptOut();
@@ -315,10 +336,7 @@ async function togglePhoneOptOut(name) {
   if (idx >= 0) current.splice(idx, 1);
   else current.push(name);
   try {
-    await api("/api/phone-opt-out", {
-      method: "POST",
-      body: JSON.stringify({ slot, names: current })
-    });
+    await api("/api/phone-opt-out", { method: "POST", body: JSON.stringify({ slot, names: current }) });
     await refreshPhoneOptOut();
   } catch (e) { alert("操作失败：" + e.message); }
 }
@@ -363,10 +381,7 @@ async function resetSeason() {
   const code = prompt("请输入验证码 [25.1]：");
   if (code !== "25.1") return alert("验证码错误");
   try {
-    const data = await api("/api/scores/reset", {
-      method: "POST",
-      body: JSON.stringify({ code })
-    });
+    const data = await api("/api/scores/reset", { method: "POST", body: JSON.stringify({ code }) });
     state.scores = data.scores;
     state.selected.clear();
     renderAll();
@@ -406,6 +421,7 @@ async function deleteStudent() {
 
 function updateDeleteSelect() {
   const sel = document.getElementById("delStudentSelect");
+  if (!sel) return;
   sel.innerHTML = '<option value="">选择要删除的学生</option>' +
     state.students.map(s => `<option value="${s}">${s}</option>`).join("");
 }
@@ -418,6 +434,7 @@ async function updateAdminList() {
   try {
     const data = await api("/api/admins");
     const list = document.getElementById("adminList");
+    if (!list) return;
     if (data.admins.length === 0) {
       list.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">暂无其他管理员</div>';
     } else {
@@ -462,10 +479,7 @@ async function changeAdminPassword() {
   const newPassword = document.getElementById("newPassword").value;
   if (!username || !newPassword) return alert("请选择用户并输入新密码");
   try {
-    await api("/api/admins/password", {
-      method: "POST",
-      body: JSON.stringify({ username, newPassword })
-    });
+    await api("/api/admins/password", { method: "POST", body: JSON.stringify({ username, newPassword }) });
     document.getElementById("newPassword").value = "";
     alert("✅ 密码已修改");
   } catch (e) { alert(e.message); }
@@ -475,8 +489,8 @@ async function updatePasswordSelect() {
   try {
     const data = await api("/api/admins");
     const sel = document.getElementById("changePassUser");
+    if (!sel) return;
     sel.innerHTML = '<option value="">选择用户</option>';
-    // 添加超级管理员自身
     sel.innerHTML += '<option value="super">👑 超级管理员</option>';
     data.admins.forEach(a => {
       sel.innerHTML += `<option value="${a.username}">🔧 ${a.name || a.username}</option>`;
@@ -493,13 +507,10 @@ async function showCalendarModal() {
   try {
     const data = await api("/api/calendar");
     calendarData = data.calendar;
-    // 周末排除
     document.getElementById("excludeFri").checked = calendarData.excludedWeekdays.includes(5);
     document.getElementById("excludeSat").checked = calendarData.excludedWeekdays.includes(6);
     document.getElementById("excludeSun").checked = calendarData.excludedWeekdays.includes(7);
-    // 假期时段
     renderPeriodList();
-    // 自定义排除
     renderCustomExclusions();
     renderCustomInclusions();
     renderCalendarPreview();
@@ -513,6 +524,7 @@ function closeCalendarModal() {
 
 function renderPeriodList() {
   const el = document.getElementById("periodList");
+  if (!el) return;
   el.innerHTML = (calendarData.periods || []).map((p, i) =>
     `<div class="flex-row" style="margin-bottom:4px;">
       <span style="font-size:12px;color:var(--orange);min-width:40px;">${p.label}</span>
@@ -523,12 +535,10 @@ function renderPeriodList() {
       <button class="btn btn-small btn-danger" onclick="removePeriod(${i})">✕</button>
     </div>`
   ).join("");
-  // 绑定输入事件
   el.querySelectorAll("input").forEach(inp => {
     inp.addEventListener("change", () => {
       const idx = parseInt(inp.dataset.idx);
-      const field = inp.dataset.field;
-      calendarData.periods[idx][field] = inp.value;
+      calendarData.periods[idx][inp.dataset.field] = inp.value;
       renderCalendarPreview();
     });
   });
@@ -549,6 +559,7 @@ function removePeriod(idx) {
 
 function renderCustomExclusions() {
   const el = document.getElementById("customExclusionList");
+  if (!el) return;
   el.innerHTML = (calendarData.customExclusions || []).map(d =>
     `<span class="tag-item">${d} <span class="tag-del" onclick="removeCustomExclusion('${d}')">✕</span></span>`
   ).join("");
@@ -572,6 +583,7 @@ function removeCustomExclusion(date) {
 
 function renderCustomInclusions() {
   const el = document.getElementById("customInclusionList");
+  if (!el) return;
   el.innerHTML = (calendarData.customInclusions || []).map(d =>
     `<span class="tag-item">${d} <span class="tag-del" onclick="removeCustomInclusion('${d}')">✕</span></span>`
   ).join("");
@@ -595,14 +607,13 @@ function removeCustomInclusion(date) {
 
 function renderCalendarPreview() {
   const el = document.getElementById("calendarPreview");
+  if (!el) return;
   const now = new Date();
   const weekdayHeaders = ["一","二","三","四","五","六","日"];
   let html = weekdayHeaders.map(w => `<div style="text-align:center;font-size:9px;color:var(--text-dim);padding:2px;">${w}</div>`).join("");
-  // 从今天往前推到最近周一
   const firstDay = new Date(now);
   firstDay.setDate(firstDay.getDate() - 3);
   const firstDow = firstDay.getDay() === 0 ? 7 : firstDay.getDay();
-  // 补齐前面的空白
   for (let i = 0; i < firstDow - 1; i++) html += '<div></div>';
   for (let i = 0; i < 60; i++) {
     const d = new Date(firstDay);
@@ -613,7 +624,6 @@ function renderCalendarPreview() {
     const isToday = isSameDayClient(d, now);
     let cls = "cal-preview-day";
     if (isToday) cls += " today";
-    // 判断类型
     const holidayLabel = getHolidayLabel(ds, calendarData);
     if (isDeduction) cls += " deduct";
     else if (holidayLabel) cls += " holiday";
@@ -681,7 +691,6 @@ async function showDeductionStatus() {
     const data = await api("/api/deductions/today");
     const ded = data.deductions || {};
     const optOuts = state.phoneOptOuts || { noon: [], evening: [] };
-    const now = new Date();
     document.getElementById("deductionContent").innerHTML = `
       <div style="margin-bottom:12px;">
         <div style="font-size:14px;font-weight:bold;text-align:center;margin-bottom:8px;">${data.date} 扣分状态</div>
@@ -754,7 +763,6 @@ function formatTime(ts) {
   return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
 }
 
-// 日志实时搜索
 document.addEventListener("DOMContentLoaded", () => {
   const filter = document.getElementById("logFilter");
   if (filter) {
@@ -783,18 +791,6 @@ function renderAll() {
   renderRankings();
   renderStudentGrid();
 }
-
-// ============================================================
-// 键盘快捷键（回车登录）
-// ============================================================
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("loginPass").addEventListener("keydown", e => {
-    if (e.key === "Enter") doLogin();
-  });
-  document.getElementById("loginUser").addEventListener("keydown", e => {
-    if (e.key === "Enter") document.getElementById("loginPass").focus();
-  });
-});
 
 // ============================================================
 // 模态框点击外部关闭
