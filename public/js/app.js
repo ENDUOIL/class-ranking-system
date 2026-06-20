@@ -146,7 +146,7 @@ async function loadApp() {
     document.getElementById("clearLogBtn").style.display = role === "super_admin" ? "inline-block" : "none";
 
     // 访客模式禁用操作按钮
-    document.querySelectorAll("#applyRuleBtn, #applyFlexBtn, .phone-opt-btn").forEach(el => {
+    document.querySelectorAll("#applyRuleBtn, #applyFlexBtn, .phone-opt-btn, #confirmPunishBtn, button[onclick*=\'showCalendarModal\'], button[onclick*=\'showLogModal\'], button[onclick*=\'showDeductionStatus\']").forEach(el => {
       el.disabled = !isAdmin;
       el.style.opacity = isAdmin ? "1" : "0.5";
       el.style.cursor = isAdmin ? "pointer" : "not-allowed";
@@ -587,6 +587,7 @@ async function updatePasswordSelect() {
 let calendarData = null;
 
 async function showCalendarModal() {
+  if (state.user && state.user.role === 'guest') return alert('请先登录管理员账号');
   var _isAdm = state.user && (state.user.role === 'super_admin' || state.user.role === 'admin');
   var _sb = document.getElementById('calendarSaveBtn');
   if (_sb) _sb.style.display = _isAdm ? '' : 'none';
@@ -774,6 +775,7 @@ async function saveCalendar() {
 // 扣分状态弹窗
 // ============================================================
 async function showDeductionStatus() {
+  if (state.user && state.user.role === 'guest') return alert('请先登录管理员账号');
   try {
     const data = await api("/api/deductions/today");
     const ded = data.deductions || {};
@@ -811,6 +813,7 @@ function closeDeductionModal() {
 // 日志弹窗
 // ============================================================
 async function showLogModal() {
+  if (state.user && state.user.role === 'guest') return alert('请先登录管理员账号');
   try {
     const data = await api("/api/logs");
     renderLogs(data.logs);
