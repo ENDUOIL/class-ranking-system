@@ -63,6 +63,21 @@ async function ensureInitialized(env) {
 
   const existingStudents = await getKV(env, "students");
   if (existingStudents && existingStudents.length > 0) return;
+  await setKV(env, "students", DEFAULT_STUDENTS);
+  const scores = {};
+  DEFAULT_STUDENTS.forEach(s => scores[s] = 15);
+  await setKV(env, "scores", scores);
+  await setKV(env, "logs", []);
+  await setKV(env, "calendar", DEFAULT_CALENDAR);
+  await setKV(env, "phoneOptOuts", {});
+  await setKV(env, "todayDeductions", {});
+  await setKV(env, "punishData", { punishRecords: {}, maxDoneLevel: {} });
+  await setKV(env, "_initialized", "yes");
+}
+
+// ============================================================
+// Auth 中间件
+// ============================================================
 async function authMiddleware(c, next) {
   const auth = c.req.header("Authorization") || "";
   const token = auth.replace("Bearer ", "");
