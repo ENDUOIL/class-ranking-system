@@ -1,4 +1,4 @@
-﻿name = "class-ranking-system"
+﻿name = "djx-ranking"
 main = "src/worker.js"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]

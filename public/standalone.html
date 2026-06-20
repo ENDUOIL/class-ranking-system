@@ -1,4 +1,610 @@
-﻿// ============================================================
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>25.1班操行排位赛</title>
+<style>﻿/* ============================================================
+   25.1班操行排位赛 - 样式
+   ============================================================ */
+:root {
+  --bg-dark: #0a192f;
+  --bg-card: rgba(255,255,255,0.07);
+  --bg-hover: rgba(255,255,255,0.12);
+  --border: rgba(255,255,255,0.12);
+  --border-light: rgba(255,255,255,0.06);
+  --text: #e8e8e8;
+  --text-dim: #8892b0;
+  --gold: #ffd700;
+  --blue: #1e88e5;
+  --blue-dark: #1e466e;
+  --red: #e63946;
+  --green: #2a9d8f;
+  --orange: #f4a261;
+  --purple: #7b2cbf;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-y: auto;
+}
+input, select, button, textarea { font-family: inherit; font-size: 14px; }
+input:focus, select:focus { outline: none; border-color: var(--gold) !important; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+
+/* ====== 页面容器 ====== */
+.page { display: none; height: 100vh; }
+.page.active { display: flex; flex-direction: column; }
+
+/* ====== 登录页 ====== */
+#loginPage {
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0a192f 0%, #112240 50%, #0a192f 100%);
+}
+.login-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 40px 32px;
+  width: 380px;
+  max-width: 90vw;
+  backdrop-filter: blur(20px);
+}
+.login-title { font-size: 24px; font-weight: bold; text-align: center; color: var(--gold); margin-bottom: 4px; }
+.login-subtitle { font-size: 14px; text-align: center; color: var(--text-dim); margin-bottom: 24px; }
+.login-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.login-tab { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 13px; transition: all .2s; }
+.login-tab.active { background: var(--gold); color: #000; font-weight: bold; }
+.login-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text); }
+.input-group { margin-bottom: 14px; }
+.input-group label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+.input-group input {
+  width: 100%; padding: 12px 14px;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-size: 15px;
+}
+.btn-login { width: 100%; padding: 13px; font-size: 16px; margin-top: 4px; }
+.login-error { color: var(--red); font-size: 13px; text-align: center; margin-top: 10px; min-height: 20px; }
+
+/* ====== 顶部导航 ====== */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.4);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  flex-shrink: 0;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-title { font-size: 16px; font-weight: bold; color: var(--gold); }
+.user-badge { font-size: 12px; color: var(--text-dim); background: var(--bg-card); padding: 2px 10px; border-radius: 10px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.topbar-btn {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text); padding: 6px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 12px; transition: all .2s;
+}
+.topbar-btn:hover { background: var(--bg-hover); border-color: var(--gold); }
+.topbar-logout { color: var(--red); border-color: rgba(230,57,70,0.3); }
+.topbar-logout:hover { background: rgba(230,57,70,0.15); border-color: var(--red); }
+.role-badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: bold;
+}
+.role-badge.super_admin { background: rgba(255,215,0,0.2); color: var(--gold); }
+.role-badge.admin { background: rgba(30,136,229,0.2); color: var(--blue); }
+.role-badge.guest { background: rgba(255,255,255,0.1); color: var(--text-dim); }
+
+/* ====== 主体布局 ====== */
+.app-body { display: flex; flex: 1; overflow: hidden; }
+
+/* ====== 侧边栏 ====== */
+.sidebar {
+  width: 140px; background: rgba(0,0,0,0.3);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar-title {
+  text-align: center; font-size: 13px; font-weight: bold;
+  color: var(--gold); padding: 10px; border-bottom: 1px solid var(--border);
+}
+.rank-list { flex: 1; overflow-y: auto; padding: 6px; }
+.rank-item { padding: 6px 8px; margin-bottom: 4px; border-left: 2px solid var(--gold); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--bg-card); }
+.rank-num { font-weight: bold; color: var(--gold); font-size: 11px; }
+.rank-name { color: var(--text); font-weight: bold; font-size: 12px; display: block; }
+.rank-score { font-size: 11px; color: var(--text-dim); }
+.rank-tag { font-size: 9px; color: #999; }
+
+/* ====== 主内容 ====== */
+.main-content { flex: 1; overflow-y: auto; padding: 10px 14px; padding-bottom: 30px; }
+.week-bar {
+  background: linear-gradient(90deg, var(--blue-dark), #0d253f);
+  padding: 10px 14px; border-radius: var(--radius);
+  text-align: center; margin-bottom: 10px;
+  border: 1px solid rgba(255,215,0,0.15);
+}
+.date-display { font-size: 15px; font-weight: bold; }
+.week-display { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.tool-btns { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+.tool-btn {
+  font-size: 11px; background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text); padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer;
+}
+.tool-btn:hover { background: var(--bg-hover); }
+
+/* ====== 卡片 & 通用组件 ====== */
+.card { background: var(--bg-card); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+.section-title { font-size: 13px; font-weight: bold; border-left: 3px solid var(--gold); padding-left: 8px; margin-bottom: 10px; color: var(--gold); }
+.section-subtitle { font-size: 12px; font-weight: bold; color: var(--text-dim); margin-bottom: 6px; }
+.flex-row { display: flex; gap: 6px; align-items: center; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-1 { flex: 1; min-width: 0; }
+.flex-2 { flex: 2; min-width: 0; }
+
+/* ====== 学生网格 ====== */
+.stu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin-bottom: 10px; }
+.stu-item {
+  padding: 6px 2px; text-align: center; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg-card);
+  cursor: pointer; transition: all .15s; position: relative;
+  min-height: 62px; display: flex; flex-direction: column; justify-content: center;
+}
+.stu-item:hover { background: var(--bg-hover); }
+.stu-item.selected { border: 2px solid var(--gold) !important; background: rgba(255,215,0,0.15) !important; }
+.stu-item .score-val { font-size: 18px; font-weight: bold; }
+.stu-item .name-val { font-size: 11px; color: var(--text-dim); }
+.stu-item .opt-out-tag {
+  position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+  font-size: 8px; padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+  background: var(--green); color: #fff;
+}
+.stu-item .opt-out-tag.noon { background: var(--orange); }
+.stu-item .opt-out-tag.evening { background: var(--purple); }
+.stu-item .opt-out-tag.both { background: var(--green); }
+
+/* ====== 按钮 ====== */
+.btn { border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-weight: bold; cursor: pointer; transition: all .15s; font-size: 13px; }
+.btn-full { width: 100%; display: block; }
+.btn-small { padding: 6px 12px; font-size: 12px; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: #1565c0; }
+.btn-secondary { background: rgba(255,255,255,0.1); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg-hover); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #c62828; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #21867a; }
+.btn-warning { background: var(--orange); color: #000; }
+.btn-warning:hover { background: #e08f4a; }
+.btn-gray { background: rgba(255,255,255,0.1); color: var(--text); }
+.btn-gray:hover { background: var(--bg-hover); }
+.btn-select { background: rgba(255,255,255,0.08); color: var(--text-dim); border: 1px solid var(--border); }
+.btn-select:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ====== 输入框 ====== */
+.input {
+  padding: 8px 12px; background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text); font-size: 13px;
+}
+.input::placeholder { color: #555; }
+select.input { cursor: pointer; }
+
+/* ====== 选中计数 ====== */
+.selected-count { font-size: 12px; color: var(--gold); }
+
+/* ====== 规则区域 ====== */
+.rule-area { margin-top: 6px; }
+.rule-area .input { margin-bottom: 6px; }
+
+/* ====== 按钮区 ====== */
+.reset-area { text-align: center; padding: 8px 0; margin-top: 10px; }
+.reset-btn {
+  background: var(--red); color: #fff; border: none;
+  padding: 10px 24px; border-radius: 20px; font-weight: bold;
+  font-size: 13px; cursor: pointer;
+}
+.reset-btn:hover { background: #c62828; }
+.share-area { text-align: center; padding: 8px 0; }
+.share-btn {
+  background: var(--purple); color: #fff; border: none;
+  padding: 10px 24px; border-radius: 20px; font-weight: bold;
+  font-size: 13px; cursor: pointer; width: 100%;
+}
+.share-btn:hover { background: #5a189a; }
+
+/* ====== 手机豁免网格 ====== */
+.phone-opt-btn {
+  padding: 4px 8px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: transparent;
+  color: var(--text-dim); cursor: pointer; font-size: 11px;
+  transition: all .15s;
+}
+.phone-opt-btn:hover { background: var(--bg-hover); }
+.phone-opt-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+.phone-opt-btn.active.noon { background: var(--orange); border-color: var(--orange); }
+.phone-opt-btn.active.evening { background: var(--purple); border-color: var(--purple); }
+.phone-opt-btn.active.both { background: var(--green); border-color: var(--green); }
+
+/* ====== 日历弹窗 ====== */
+.modal {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: #112240; border: 1px solid var(--border);
+  border-radius: 16px; max-height: 85vh; overflow-y: auto;
+  width: 90vw; max-width: 700px;
+}
+.modal-calendar { max-width: 700px; }
+.modal-log { max-width: 650px; }
+.modal-deduction { max-width: 500px; }
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  font-weight: bold; font-size: 15px; color: var(--gold);
+}
+.modal-close { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 4px; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 16px 18px; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--border); }
+
+/* ====== 日历预览 ====== */
+.calendar-preview { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 6px; }
+.cal-preview-day { padding: 4px 2px; text-align: center; font-size: 9px; border-radius: 3px; background: var(--bg-card); color: var(--text-dim); }
+.cal-preview-day.deduct { background: rgba(42,157,143,0.25); color: var(--green); border: 1px solid rgba(42,157,143,0.3); }
+.cal-preview-day.excluded { background: rgba(230,57,70,0.15); color: var(--red); }
+.cal-preview-day.holiday { background: rgba(244,162,97,0.2); color: var(--orange); }
+.cal-preview-day.weekend { background: rgba(255,255,255,0.05); color: #555; }
+.cal-preview-day.today { border: 1px solid var(--gold) !important; }
+
+/* ====== 标签列表 ====== */
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tag-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 12px; font-size: 11px;
+  background: var(--bg-card); border: 1px solid var(--border);
+}
+.tag-item .tag-del { cursor: pointer; color: var(--red); font-weight: bold; }
+
+/* ====== 日志列表 ====== */
+.log-list { max-height: 50vh; overflow-y: auto; }
+.log-item {
+  padding: 8px 10px; border-bottom: 1px solid var(--border-light);
+  font-size: 12px; line-height: 1.5;
+}
+.log-item .log-time { color: var(--text-dim); font-size: 10px; }
+.log-item .log-user { color: var(--gold); font-weight: bold; }
+.log-item .log-action { color: var(--blue); }
+.log-item .log-detail { color: var(--text); }
+
+/* ====== 管理员列表 ====== */
+.admin-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-card); border-radius: var(--radius-sm); font-size: 12px; }
+
+/* ====== 复选框标签 ====== */
+.checkbox-label { display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+
+/* ====== 响应式 ====== */
+@media (max-width: 600px) {
+  .sidebar { width: 80px; }
+  .rank-item { padding: 4px 4px; }
+  .rank-name { font-size: 10px; }
+  .rank-score { font-size: 9px; }
+  .stu-grid { grid-template-columns: repeat(3, 1fr); }
+  .login-card { padding: 28px 20px; }
+  .modal-content { width: 95vw; }
+}
+@media (max-width: 400px) {
+  .sidebar { width: 65px; }
+  .stu-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar-title { font-size: 13px; }
+}
+
+/* ====== 登录按钮 ====== */
+.topbar-login { color: var(--green); border-color: rgba(42,157,143,0.3); }
+.topbar-login:hover { background: rgba(42,157,143,0.15); border-color: var(--green); }
+
+/* ====== 惩罚标签 ====== */
+.punish-tag {
+  position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+  font-size: 8px; padding: 1px 6px; border-radius: 3px;
+  white-space: nowrap; line-height: 1.6; z-index: 10;
+}
+.punish-tag.tag-red { background: var(--red); color: #fff; }
+.punish-tag.tag-green { background: var(--green); color: #fff; }
+.punish-tag.tag-gray { background: #555; color: #ccc; }
+.punish-tag.tag-standing { background: var(--orange); color: #000; bottom: -18px; font-size: 7px; }
+
+.stu-item { min-height: 75px; padding-bottom: 18px; }
+
+/* ====== 移动端适配 ====== */
+@media (max-width: 768px) {
+  .sidebar { width: 80px; }
+  .sidebar-title { font-size: 11px; padding: 6px; }
+  .rank-item { padding: 3px 4px; }
+  .rank-name { font-size: 10px; }
+  .rank-score { font-size: 9px; }
+  .stu-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .stu-item { min-height: 60px; padding: 4px 1px; font-size: 11px; }
+  .stu-item .score-val { font-size: 15px; }
+  .main-content { padding: 6px 8px; padding-bottom: 40px; }
+  .card { padding: 8px; }
+  .flex-row { flex-wrap: wrap; }
+  .topbar-title { font-size: 13px; }
+  .topbar-btn { font-size: 10px; padding: 4px 8px; }
+  .modal-content { width: 95vw; max-height: 90vh; }
+}
+@media (max-width: 400px) {
+  .sidebar { width: 65px; }
+  .rank-item { padding: 2px 3px; }
+  .rank-name { font-size: 9px; }
+  .stu-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar-title { font-size: 11px; }
+  .topbar-btn { font-size: 9px; padding: 3px 6px; }
+}
+
+/* ====== 底部留白 ====== */
+</style>
+</head>
+<body>
+
+<div id="appPage" class="app-container">
+  <!-- 顶部导航 -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">🏆 25.1班操行排位赛</span>
+      <span id="userBadge" class="user-badge">访客</span>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="showCalendarModal()" title="日历配置">📅 日历</button>
+      <button class="topbar-btn" onclick="showLogModal()" title="操作日志">📋 日志</button>
+      <span id="roleBadge" class="role-badge guest">👤 访客</span>
+      <button id="loginBtn" class="topbar-btn topbar-login" onclick="showLoginModal()">登录</button>
+      <button id="logoutBtn" class="topbar-btn topbar-logout" style="display:none" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <!-- 左侧排行榜 -->
+    <div class="sidebar">
+      <div class="sidebar-title">🏆 积分榜</div>
+      <div id="rankList" class="rank-list"><div class="rank-item"><span class="rank-num">1</span><span class="rank-name">包顺通</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">2</span><span class="rank-name">郑清颢</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">3</span><span class="rank-name">邹仁泽</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">4</span><span class="rank-name">秦韵贺</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">5</span><span class="rank-name">赵巍霖</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">6</span><span class="rank-name">王晨旭</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">7</span><span class="rank-name">张广涛</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">8</span><span class="rank-name">程泓博</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">9</span><span class="rank-name">姜乙丰</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">10</span><span class="rank-name">唐佳奇</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">11</span><span class="rank-name">赵梓渤</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">12</span><span class="rank-name">吴俊霖</span><span class="rank-score">15分</span></div><div class="rank-item"><span class="rank-num">13</span><span class="rank-name">王译广</span><span class="rank-score">15分</span></div></div>
+    </div>
+
+    <!-- 主区域 -->
+    <div class="main-content">
+      <!-- 日期与周次信息 -->
+      <div class="week-bar">
+        <div id="dateDisplay" class="date-display"></div>
+        <div id="weekDisplay" class="week-display"></div>
+        <div class="tool-btns">
+          <button class="tool-btn" onclick="showDeductionStatus()">📊 今日扣分</button>
+        </div>
+      </div>
+
+      <!-- 学生网格（所有人可见） -->
+      <div class="card">
+        <div class="section-title">👥 学生积分</div>
+        <div id="stuGrid" class="stu-grid"><div class="stu-item"><span class="score-val">15</span><span class="name-val">包顺通</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">郑清颢</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">邹仁泽</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">秦韵贺</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">赵巍霖</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">王晨旭</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">张广涛</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">程泓博</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">姜乙丰</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">唐佳奇</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">赵梓渤</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">吴俊霖</span></div><div class="stu-item"><span class="score-val">15</span><span class="name-val">王译广</span></div></div>
+      </div>
+
+      <!-- 管理工具区（仅管理员可见） -->
+      <div id="adminTools" class="admin-tools" style="display:none">
+        <div id="superAdminSection" class="card" style="display:none">
+          <div class="section-title">👑 超级管理员 - 学生管理</div>
+          <div class="flex-row">
+            <input type="text" id="newStudentName" class="input flex-1" placeholder="输入新增学生姓名">
+            <button class="btn btn-small btn-primary" onclick="addStudent()">新增</button>
+          </div>
+          <div class="flex-row" style="margin-top:6px;">
+            <select id="delStudentSelect" class="input flex-1">
+              <option value="">选择要删除的学生</option>
+            </select>
+            <button class="btn btn-small btn-danger" onclick="deleteStudent()">删除</button>
+          </div>
+        </div>
+
+        <div id="adminMgmtSection" class="card" style="display:none">
+          <div class="section-title">👥 管理员管理</div>
+          <details>
+            <summary style="cursor:pointer;color:var(--gold);font-size:13px;">展开管理</summary>
+            <div style="margin-top:8px;">
+              <div class="flex-row">
+                <input type="text" id="newAdminUser" class="input flex-1" placeholder="新管理员用户名">
+                <input type="password" id="newAdminPass" class="input flex-1" placeholder="密码">
+                <input type="text" id="newAdminName" class="input flex-1" placeholder="显示名称">
+                <button class="btn btn-small btn-primary" onclick="addAdmin()">新增</button>
+              </div>
+              <div id="adminList" class="flex-col" style="margin-top:6px;gap:4px;"></div>
+              <div class="section-subtitle" style="margin-top:8px;">修改管理员密码</div>
+              <div class="flex-row">
+                <select id="changePassUser" class="input flex-1"><option value="">选择用户</option></select>
+                <input type="password" id="newPassword" class="input flex-1" placeholder="新密码">
+                <button class="btn btn-small btn-warning" onclick="changeAdminPassword()">修改</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="card">
+          <div class="section-title">⚖️ 积分调整</div>
+          <div class="flex-row">
+            <button class="btn btn-small btn-select" onclick="selectAll(true)">全选</button>
+            <button class="btn btn-small btn-select" onclick="selectAll(false)">全清</button>
+            <span id="selectedCount" class="selected-count">已选 0 人</span>
+          </div>
+          <div style="margin-top:6px;">
+            <span style="font-size:11px;color:var(--text-dim);">点击学生名字选中/取消 | 负分=早自习站立 | ≤-5=收手机</span>
+          </div>
+          <div class="rule-area">
+            <select id="ruleSelect" class="input">
+              <optgroup label="🔴 违纪扣分">
+                <option value="-8">打架斗殴 | -8分</option>
+                <option value="-5">顶撞老师 | -5分</option>
+                <option value="-4">实训室违规 | -4分</option>
+                <option value="-3">旷课/抽烟 | -3分</option>
+                <option value="-2">不写作业/串寝 | -2分</option>
+                <option value="-1">迟到/睡觉/响铃/串座 | -1分</option>
+                <option value="-1" selected>骂人/卫生差 | -1分</option>
+              </optgroup>
+              <optgroup label="🟢 表现奖励">
+                <option value="15">成功招生(单人) | +15分</option>
+                <option value="10">校级活动获奖 | +10分</option>
+                <option value="5">班级重大贡献 | +5分</option>
+                <option value="3">考试/测试第1名 | +3分</option>
+                <option value="2">考试/测试第2名 | +2分</option>
+                <option value="1">考试/测试第3名 | +1分</option>
+                <option value="2">积极参加活动 | +2分</option>
+                <option value="1">完成老师交代任务 | +1分</option>
+              </optgroup>
+              <optgroup label="⚡ 1分兑换区">
+                <option value="-1">兑换：中午手机权 | -1分</option>
+                <option value="-1">兑换：晚上手机权 | -1分</option>
+                <option value="-1">兑换：教室充电一次 | -1分</option>
+              </optgroup>
+              <optgroup label="🤳 手机使用（免扣分）">
+                <option value="PHONE_NOON">申请：中午不玩手机（免扣分）</option>
+                <option value="PHONE_EVENING">申请：晚上不玩手机（免扣分）</option>
+              </optgroup>
+              <optgroup label="✨ 特殊操作">
+                <option value="10">【福利】本周表现优异加分 | +10分</option>
+              </optgroup>
+            </select>
+            <button class="btn btn-primary btn-full" onclick="applyRule()" id="applyRuleBtn">确认提交</button>
+          </div>
+          <div class="flex-row" style="margin-top:6px;">
+          <button class="btn btn-small btn-green" id="confirmPunishBtn" onclick="confirmPunish()" disabled>🤝 无待扣项</button>
+        </div>
+        <div class="flex-row" style="margin-top:8px;">
+            <input type="number" id="flexVal" class="input flex-1" placeholder="自定义分值">
+            <input type="text" id="flexReason" class="input flex-2" placeholder="原因备注">
+            <button class="btn btn-small btn-gray" onclick="applyFlex()" id="applyFlexBtn">自定义调整</button>
+            <button class="btn btn-small btn-danger" id="clearRedBtn" onclick="resetPunishStatus()">🔄 清除红标</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">📱 手机使用豁免管理</div>
+          <div class="flex-row">
+            <select id="phoneSlotSelect" class="input flex-1">
+              <option value="noon">🌞 中午 (12:00扣分)</option>
+              <option value="evening">🌙 晚上 (16:45扣分)</option>
+            </select>
+            <button class="btn btn-small btn-primary" onclick="refreshPhoneOptOut()">刷新名单</button>
+          </div>
+          <div class="flex-row" style="margin-top:6px;flex-wrap:wrap;gap:6px;" id="phoneOptOutGrid"></div>
+          <button class="btn btn-small btn-green btn-full" style="margin-top:6px;" onclick="savePhoneOptOuts()">保存豁免名单</button>
+        </div>
+      </div>
+
+      <div id="resetSection" class="reset-area" style="display:none">
+        <button class="reset-btn" onclick="resetSeason()">💥 终结赛季 · 全员复位15分</button>
+      </div>
+
+      <div class="share-area">
+        <button class="share-btn" onclick="shareRanks()">📢 生成班级排位分享战报</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 登录弹窗 ========== -->
+<div id="loginModal" class="modal" style="display:none">
+  <div class="modal-content" style="max-width:360px;">
+    <div class="modal-header">
+      <span>🔐 管理员登录</span>
+      <button class="modal-close" onclick="closeLoginModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group" style="margin-bottom:12px;">
+        <label style="display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;">请输入密码</label>
+        <input type="password" id="loginPassInput" class="input" style="width:100%;padding:12px;font-size:16px;" placeholder="输入密码" autocomplete="off">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doPasswordLogin()" style="padding:12px;font-size:15px;">登 录</button>
+      <div id="loginModalError" style="color:var(--red);font-size:13px;text-align:center;margin-top:8px;min-height:20px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 日历弹窗 ========== -->
+<div id="calendarModal" class="modal" style="display:none">
+  <div class="modal-content modal-calendar">
+    <div class="modal-header">
+      <span>📅 自动扣分日历配置</span>
+      <button class="modal-close" onclick="closeCalendarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-subtitle">默认不扣分日设置</div>
+      <div class="flex-row">
+        <label class="checkbox-label"><input type="checkbox" id="excludeFri"> 周五</label>
+        <label class="checkbox-label"><input type="checkbox" id="excludeSat"> 周六</label>
+        <label class="checkbox-label"><input type="checkbox" id="excludeSun"> 周日</label>
+      </div>
+      <div class="section-subtitle" style="margin-top:10px;">固定假期不扣分</div>
+      <div id="periodList"></div>
+      <button class="btn btn-small btn-gray" onclick="addPeriod()">+ 添加假期时段</button>
+      <div class="section-subtitle" style="margin-top:10px;">额外排除日期</div>
+      <div class="flex-row">
+        <input type="date" id="customExcludeDate" class="input flex-1">
+        <button class="btn btn-small btn-danger" onclick="addCustomExclusion()">排除此日</button>
+      </div>
+      <div id="customExclusionList" class="tag-list"></div>
+      <div class="section-subtitle" style="margin-top:10px;">强制扣分日期</div>
+      <div class="flex-row">
+        <input type="date" id="customIncludeDate" class="input flex-1">
+        <button class="btn btn-small btn-green" onclick="addCustomInclusion()">强制此日</button>
+      </div>
+      <div id="customInclusionList" class="tag-list"></div>
+      <div class="section-subtitle" style="margin-top:10px;">近60天扣日预览</div>
+      <div id="calendarPreview" class="calendar-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button id="calendarSaveBtn" class="btn btn-primary" onclick="saveCalendar()">保存日历设置</button>
+      <button class="btn btn-gray" onclick="closeCalendarModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 日志弹窗 ========== -->
+<div id="logModal" class="modal" style="display:none">
+  <div class="modal-content modal-log">
+    <div class="modal-header">
+      <span>📋 操作日志</span>
+      <button class="modal-close" onclick="closeLogModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="flex-row" style="margin-bottom:8px;">
+        <input type="text" id="logFilter" class="input flex-1" placeholder="搜索日志...">
+        <button class="btn btn-small btn-danger" id="clearLogBtn" style="display:none;" onclick="clearLogs()">清空</button>
+      </div>
+      <div id="logList" class="log-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 今日扣分弹窗 ========== -->
+<div id="deductionModal" class="modal" style="display:none">
+  <div class="modal-content modal-deduction">
+    <div class="modal-header">
+      <span>📊 今日扣分状态</span>
+      <button class="modal-close" onclick="closeDeductionModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="deductionContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>﻿// ============================================================
 // 25.1班操行排位赛 - 前端逻辑
 // ============================================================
 const API = "";
@@ -939,3 +1545,7 @@ document.addEventListener("click", e => {
     e.target.style.display = "none";
   }
 });
+</script>
+</body>
+</html>
+

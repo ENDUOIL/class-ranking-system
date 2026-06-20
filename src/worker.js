@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 
 const app = new Hono();
 app.use("/api/*", cors());
+app.onError((err, c) => { console.error(err.message); return c.json({error:err.message}, 500); });
 
 // ============================================================
 // KV 工具函数
@@ -516,7 +517,7 @@ app.delete("/api/logs", authMiddleware, superAdminOnly, async (c) => {
 // Cron 触发器 - 自动扣分
 // ============================================================
 async function handleScheduled(event, env, ctx) {
-  await ensureInitialized(env);
+  try { await ensureInitialized(env); } catch(e) { return; }
   const now = new Date();
   const today = getDateStr(now);
   const currentHour = now.getHours();
@@ -563,8 +564,8 @@ async function handleScheduled(event, env, ctx) {
 // ============================================================
 export default {
   async fetch(request, env, ctx) {
-    await ensureInitialized(env);
-    return app.fetch(request, env, ctx);
+    try { await ensureInitialized(env); } catch(e) { console.error('init error:', e); }
+    try { return await app.fetch(request, env, ctx); } catch(e) { return new Response(JSON.stringify({error:e.message}), {status:500,headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}}); }
   },
   async scheduled(event, env, ctx) {
     await handleScheduled(event, env, ctx);

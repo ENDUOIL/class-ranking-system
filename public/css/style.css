@@ -26,7 +26,7 @@ body {
   background: var(--bg-dark);
   color: var(--text);
   min-height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
 }
 input, select, button, textarea { font-family: inherit; font-size: 14px; }
 input:focus, select:focus { outline: none; border-color: var(--gold) !important; }

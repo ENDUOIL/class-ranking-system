@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>25.1班操行排位赛</title>
-<link rel="stylesheet" href="/css/style.css?v=final1">
+<link rel="stylesheet" href="/css/style.css?v=fix3">
 </head>
 <body>
 
@@ -16,6 +16,7 @@
       <span id="userBadge" class="user-badge">访客</span>
     </div>
     <div class="topbar-right">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换显示模式">🌙 夜间</button>
       <button class="topbar-btn" onclick="showCalendarModal()" title="日历配置">📅 日历</button>
       <button class="topbar-btn" onclick="showLogModal()" title="操作日志">📋 日志</button>
       <span id="roleBadge" class="role-badge guest">👤 访客</span>
@@ -105,7 +106,7 @@
                 <option value="-3">旷课/抽烟 | -3分</option>
                 <option value="-2">不写作业/串寝 | -2分</option>
                 <option value="-1">迟到/睡觉/响铃/串座 | -1分</option>
-                <option value="-1" selected>骂人/卫生差 | -1分</option>
+                <option value="-1">骂人/卫生差 | -1分</option>
               </optgroup>
               <optgroup label="🟢 表现奖励">
                 <option value="15">成功招生(单人) | +15分</option>
@@ -180,6 +181,11 @@
         <label style="display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;">请输入密码</label>
         <input type="password" id="loginPassInput" class="input" style="width:100%;padding:12px;font-size:16px;" placeholder="输入密码" autocomplete="off">
       </div>
+      <div class="flex-row" style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">
+        <span>超级管理员: yangjian1</span>
+        <span style="margin:0 6px;">|</span>
+        <span>管理员: 251</span>
+      </div>
       <button class="btn btn-primary btn-full" onclick="doPasswordLogin()" style="padding:12px;font-size:15px;">登 录</button>
       <div id="loginModalError" style="color:var(--red);font-size:13px;text-align:center;margin-top:8px;min-height:20px;"></div>
     </div>
@@ -219,7 +225,7 @@
       <div id="calendarPreview" class="calendar-preview"></div>
     </div>
     <div class="modal-footer">
-      <button id="calendarSaveBtn" class="btn btn-primary" onclick="saveCalendar()">保存日历设置</button>
+      <button class="btn btn-primary" onclick="saveCalendar()">保存日历设置</button>
       <button class="btn btn-gray" onclick="closeCalendarModal()">取消</button>
     </div>
   </div>
@@ -255,7 +261,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=mqm1wvpo"></script>
+<script>window.__INIT__={"students":["包顺通","郑清颢","邹仁泽","秦韵贺","赵巍霖","王晨旭","张广涛","程泓博","姜乙丰","唐佳奇","赵梓渤","吴俊霖","王译广"],"scores":{"包顺通":15,"郑清颢":15,"邹仁泽":15,"秦韵贺":15,"赵巍霖":15,"王晨旭":15,"张广涛":15,"程泓博":15,"姜乙丰":15,"唐佳奇":15,"赵梓渤":15,"吴俊霖":15,"王译广":15},"punishData":{"punishRecords":{},"maxDoneLevel":{}},"phoneOptOuts":{},"todayDeductions":{},"logs":[],"calendar":{"excludedWeekdays":[5,6,7],"periods":[{"start":"12-28","end":"03-03","label":"寒假","skipYearBoundary":true},{"start":"07-05","end":"09-03","label":"暑假","skipYearBoundary":false}],"customExclusions":[],"customInclusions":[]}};</script><script src="/js/app.js?v=fix3"></script>
 </body>
 </html>
+
 

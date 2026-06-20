@@ -1,0 +1,75 @@
+{
+  "students": [
+    "包顺通",
+    "郑清颢",
+    "邹仁泽",
+    "秦韵贺",
+    "赵巍霖",
+    "王晨旭",
+    "张广涛",
+    "程泓博",
+    "姜乙丰",
+    "唐佳奇",
+    "赵梓渤",
+    "吴俊霖",
+    "王译广"
+  ],
+  "scores": {
+    "包顺通": 15,
+    "郑清颢": 15,
+    "邹仁泽": 15,
+    "秦韵贺": 15,
+    "赵巍霖": 15,
+    "王晨旭": 15,
+    "张广涛": 15,
+    "程泓博": 15,
+    "姜乙丰": 15,
+    "唐佳奇": 15,
+    "赵梓渤": 15,
+    "吴俊霖": 15,
+    "王译广": 15
+  },
+  "users": {
+    "super": {
+      "password": "4779bda25d3be481c5b2697878d343e1120f3b4fb96e9fc2cc2746afdbd2a4cb",
+      "role": "super_admin",
+      "name": "超级管理员"
+    },
+    "admin": {
+      "password": "c75d3f1f5bcd6914d0331ce5ec17c0db8f2070a2d4285f8e3ff11c6ca19168ff",
+      "role": "admin",
+      "name": "管理员"
+    }
+  },
+  "logs": [],
+  "calendar": {
+    "excludedWeekdays": [
+      5,
+      6,
+      7
+    ],
+    "periods": [
+      {
+        "start": "12-28",
+        "end": "03-03",
+        "label": "寒假",
+        "skipYearBoundary": true
+      },
+      {
+        "start": "07-05",
+        "end": "09-03",
+        "label": "暮假",
+        "skipYearBoundary": false
+      }
+    ],
+    "customExclusions": [],
+    "customInclusions": []
+  },
+  "phoneOptOuts": {},
+  "todayDeductions": {},
+  "punishData": {
+    "punishRecords": {},
+    "maxDoneLevel": {}
+  },
+  "tokens": {}
+}
