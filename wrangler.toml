@@ -1,0 +1,17 @@
+﻿name = "class-ranking-system"
+main = "src/worker.js"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+assets = { directory = "./public" }
+
+[[kv_namespaces]]
+binding = "RANKING_KV"
+id = "ranking-kv-id"
+preview_id = "ranking-kv-preview"
+
+[[triggers]]
+crons = ["0 12 * * 1-4"]
+
+[[triggers]]
+crons = ["45 16 * * 1-4"]

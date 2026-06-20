@@ -1,0 +1,17 @@
+﻿{
+  "name": "class-ranking-system",
+  "version": "1.0.0",
+  "description": "25.1班操行排位赛 - 积分排位管理系统",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "pages:deploy": "wrangler pages deploy ./public"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.100.0"
+  }
+}

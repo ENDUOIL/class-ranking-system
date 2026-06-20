@@ -1,0 +1,263 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>25.1班操行排位赛</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<!-- ========== 登录页 ========== -->
+<div id="loginPage" class="page active">
+  <div class="login-card">
+    <div class="login-title">🏆 25.1班操行排位赛</div>
+    <div class="login-subtitle">积分管理系统</div>
+    <div class="login-tabs">
+      <button class="login-tab active" data-role="admin" onclick="switchLoginTab('admin')">管理员登录</button>
+      <button class="login-tab" data-role="guest" onclick="switchLoginTab('guest')">访客浏览</button>
+    </div>
+    <div id="adminLoginForm">
+      <div class="input-group">
+        <label>用户名</label>
+        <input type="text" id="loginUser" placeholder="输入用户名" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label>密码</label>
+        <input type="password" id="loginPass" placeholder="输入密码" autocomplete="off">
+      </div>
+      <button class="btn btn-primary btn-login" onclick="doLogin()">登 录</button>
+      <div id="loginError" class="login-error"></div>
+    </div>
+    <div id="guestLoginForm" style="display:none">
+      <p style="color:#aaa;font-size:13px;text-align:center;margin:20px 0;">访客模式下仅可查看积分排名与操作日志</p>
+      <button class="btn btn-secondary btn-login" onclick="enterGuestMode()">进入访客模式</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 主应用 ========== -->
+<div id="appPage" class="page" style="display:none">
+  <!-- 顶部导航 -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">🏆 25.1班操行排位赛</span>
+      <span id="userBadge" class="user-badge"></span>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="showCalendarModal()" title="日历配置">📅 日历</button>
+      <button class="topbar-btn" onclick="showLogModal()" title="操作日志">📋 日志</button>
+      <span id="roleBadge" class="role-badge"></span>
+      <button class="topbar-btn topbar-logout" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <!-- 左侧排行榜 -->
+    <div class="sidebar">
+      <div class="sidebar-title">🏆 积分榜</div>
+      <div id="rankList" class="rank-list"></div>
+    </div>
+
+    <!-- 主区域 -->
+    <div class="main-content">
+      <!-- 日期与周次信息 -->
+      <div class="week-bar">
+        <div id="dateDisplay" class="date-display"></div>
+        <div id="weekDisplay" class="week-display"></div>
+        <div class="tool-btns">
+          <button class="tool-btn" onclick="showDeductionStatus()">📊 今日扣分</button>
+        </div>
+      </div>
+
+      <!-- 管理工具区 -->
+      <div id="adminTools" class="admin-tools" style="display:none">
+        <!-- 学生管理（超级管理员专属） -->
+        <div id="superAdminSection" class="card" style="display:none">
+          <div class="section-title">👑 超级管理员 - 学生管理</div>
+          <div class="flex-row">
+            <input type="text" id="newStudentName" class="input flex-1" placeholder="输入新增学生姓名">
+            <button class="btn btn-small btn-primary" onclick="addStudent()">新增</button>
+          </div>
+          <div class="flex-row" style="margin-top:6px;">
+            <select id="delStudentSelect" class="input flex-1">
+              <option value="">选择要删除的学生</option>
+            </select>
+            <button class="btn btn-small btn-danger" onclick="deleteStudent()">删除</button>
+          </div>
+        </div>
+
+        <!-- 管理员管理（超级管理员专属） -->
+        <div id="adminMgmtSection" class="card" style="display:none">
+          <div class="section-title">👥 管理员管理</div>
+          <details>
+            <summary style="cursor:pointer;color:var(--gold);font-size:13px;">展开管理</summary>
+            <div style="margin-top:8px;">
+              <div class="flex-row">
+                <input type="text" id="newAdminUser" class="input flex-1" placeholder="新管理员用户名">
+                <input type="password" id="newAdminPass" class="input flex-1" placeholder="密码">
+                <input type="text" id="newAdminName" class="input flex-1" placeholder="显示名称">
+                <button class="btn btn-small btn-primary" onclick="addAdmin()">新增</button>
+              </div>
+              <div id="adminList" class="flex-col" style="margin-top:6px;gap:4px;"></div>
+              <div class="section-subtitle" style="margin-top:8px;">修改管理员密码</div>
+              <div class="flex-row">
+                <select id="changePassUser" class="input flex-1"><option value="">选择用户</option></select>
+                <input type="password" id="newPassword" class="input flex-1" placeholder="新密码">
+                <button class="btn btn-small btn-warning" onclick="changeAdminPassword()">修改</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- 积分调整区 -->
+        <div class="card">
+          <div class="section-title">⚖️ 积分调整</div>
+          <div class="flex-row">
+            <button class="btn btn-small btn-select" onclick="selectAll(true)">全选</button>
+            <button class="btn btn-small btn-select" onclick="selectAll(false)">全清</button>
+            <span id="selectedCount" class="selected-count">已选 0 人</span>
+          </div>
+          <div id="stuGrid" class="stu-grid"></div>
+          <div class="rule-area">
+            <select id="ruleSelect" class="input">
+              <optgroup label="🔴 违纪扣分">
+                <option value="-8">打架斗殴 | -8分</option>
+                <option value="-5">顶撞老师 | -5分</option>
+                <option value="-4">实训室违规 | -4分</option>
+                <option value="-3">旷课/抽烟 | -3分</option>
+                <option value="-2">不写作业/串寝 | -2分</option>
+                <option value="-1">迟到/睡觉/响铃/串座 | -1分</option>
+                <option value="-1">骂人/卫生差 | -1分</option>
+              </optgroup>
+              <optgroup label="🟢 表现奖励">
+                <option value="15">成功招生(单人) | +15分</option>
+                <option value="10">校级活动获奖 | +10分</option>
+                <option value="5">班级重大贡献 | +5分</option>
+                <option value="3">考试/测试第1名 | +3分</option>
+                <option value="2">考试/测试第2名 | +2分</option>
+                <option value="1">考试/测试第3名 | +1分</option>
+                <option value="2">积极参加活动 | +2分</option>
+                <option value="1">完成老师交代任务 | +1分</option>
+              </optgroup>
+              <optgroup label="⚡ 1分兑换区">
+                <option value="-1">兑换：中午手机权 | -1分</option>
+                <option value="-1">兑换：晚上手机权 | -1分</option>
+                <option value="-1">兑换：教室充电一次 | -1分</option>
+              </optgroup>
+              <optgroup label="🤳 手机使用（不扣分免兑换）">
+                <option value="PHONE_NOON">申请：中午不玩手机（免扣分）</option>
+                <option value="PHONE_EVENING">申请：晚上不玩手机（免扣分）</option>
+              </optgroup>
+              <optgroup label="✨ 特殊操作">
+                <option value="10">【福利】本周表现优异加分 | +10分</option>
+              </optgroup>
+            </select>
+            <button class="btn btn-primary btn-full" onclick="applyRule()">确认提交</button>
+          </div>
+          <div class="flex-row" style="margin-top:8px;">
+            <input type="number" id="flexVal" class="input flex-1" placeholder="自定义分值">
+            <input type="text" id="flexReason" class="input flex-2" placeholder="原因备注">
+            <button class="btn btn-small btn-gray" onclick="applyFlex()">自定义调整</button>
+          </div>
+        </div>
+
+        <!-- 手机豁免操作区 -->
+        <div class="card">
+          <div class="section-title">📱 手机使用豁免管理</div>
+          <div class="flex-row">
+            <select id="phoneSlotSelect" class="input flex-1">
+              <option value="noon">🌞 中午 (12:00扣分)</option>
+              <option value="evening">🌙 晚上 (16:45扣分)</option>
+            </select>
+            <button class="btn btn-small btn-primary" onclick="refreshPhoneOptOut()">刷新名单</button>
+          </div>
+          <div class="flex-row" style="margin-top:6px;flex-wrap:wrap;gap:6px;" id="phoneOptOutGrid"></div>
+          <button class="btn btn-small btn-green btn-full" style="margin-top:6px;" onclick="savePhoneOptOuts()">保存豁免名单</button>
+        </div>
+      </div>
+
+      <!-- 底部赛季重置（超级管理员专属） -->
+      <div id="resetSection" class="reset-area" style="display:none">
+        <button class="reset-btn" onclick="resetSeason()">💥 终结赛季 · 全员复位15分</button>
+      </div>
+
+      <!-- 分享栏 -->
+      <div class="share-area">
+        <button class="share-btn" onclick="shareRanks()">📢 生成班级排位分享战报</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 日历弹窗 ========== -->
+<div id="calendarModal" class="modal" style="display:none">
+  <div class="modal-content modal-calendar">
+    <div class="modal-header">
+      <span>📅 自动扣分日历配置</span>
+      <button class="modal-close" onclick="closeCalendarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-subtitle">默认不扣分日设置</div>
+      <div class="flex-row">
+        <label class="checkbox-label"><input type="checkbox" id="excludeFri"> 周五</label>
+        <label class="checkbox-label"><input type="checkbox" id="excludeSat"> 周六</label>
+        <label class="checkbox-label"><input type="checkbox" id="excludeSun"> 周日</label>
+      </div>
+      <div class="section-subtitle" style="margin-top:10px;">固定假期不扣分</div>
+      <div id="periodList"></div>
+      <button class="btn btn-small btn-gray" onclick="addPeriod()">+ 添加假期时段</button>
+      <div class="section-subtitle" style="margin-top:10px;">额外排除日期</div>
+      <div class="flex-row">
+        <input type="date" id="customExcludeDate" class="input flex-1">
+        <button class="btn btn-small btn-danger" onclick="addCustomExclusion()">排除此日</button>
+      </div>
+      <div id="customExclusionList" class="tag-list"></div>
+      <div class="section-subtitle" style="margin-top:10px;">强制扣分日期（排除日但需要扣分）</div>
+      <div class="flex-row">
+        <input type="date" id="customIncludeDate" class="input flex-1">
+        <button class="btn btn-small btn-green" onclick="addCustomInclusion()">强制此日</button>
+      </div>
+      <div id="customInclusionList" class="tag-list"></div>
+      <div class="section-subtitle" style="margin-top:10px;">近60天扣日预览</div>
+      <div id="calendarPreview" class="calendar-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveCalendar()">保存日历设置</button>
+      <button class="btn btn-gray" onclick="closeCalendarModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 日志弹窗 ========== -->
+<div id="logModal" class="modal" style="display:none">
+  <div class="modal-content modal-log">
+    <div class="modal-header">
+      <span>📋 操作日志</span>
+      <button class="modal-close" onclick="closeLogModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="flex-row" style="margin-bottom:8px;">
+        <input type="text" id="logFilter" class="input flex-1" placeholder="搜索日志...">
+        <button class="btn btn-small btn-danger" id="clearLogBtn" style="display:none;" onclick="clearLogs()">清空</button>
+      </div>
+      <div id="logList" class="log-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 今日扣分弹窗 ========== -->
+<div id="deductionModal" class="modal" style="display:none">
+  <div class="modal-content modal-deduction">
+    <div class="modal-header">
+      <span>📊 今日扣分状态</span>
+      <button class="modal-close" onclick="closeDeductionModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="deductionContent"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
