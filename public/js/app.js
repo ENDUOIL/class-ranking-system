@@ -240,7 +240,7 @@ function renderStudentGrid() {
       var tag = "";
       if (tagLabel) tag = "<span class='" + tagClass + "'>" + tagLabel + "</span>";
       
-      html += "<div class='stu-item " + sel + "' onclick="toggleSelect('" + name.replace(/'/g, "\'") + "')">" +
+      html += "<div class='stu-item " + sel + "' onclick="toggleSelect('" + name + "')">" +
         "<span class='score-val'>" + score + "</span>" +
         "<span class='name-val'>" + name + "</span>" +
         tag + pTag + standTag + "</div>";
