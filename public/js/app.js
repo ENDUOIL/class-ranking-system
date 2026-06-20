@@ -26,7 +26,7 @@ async function api(path, opts = {}) {
 // ============================================================
 // 初始化：默认游客模式
 // ============================================================
-(async function() {
+document.addEventListener("DOMContentLoaded", async function() {
   state.token = null;
   state.user = { username: "guest", role: "guest", name: "访客" };
   try {
@@ -34,7 +34,7 @@ async function api(path, opts = {}) {
   } catch(e) {
     console.error("加载失败", e);
   }
-})();
+});
 
 // ============================================================
 // 登录弹窗
@@ -143,6 +143,17 @@ async function loadApp() {
 // ============================================================
 // 日期时间
 // ============================================================
+// Temporary fix: fallback if loadApp fails
+var fallbackRender = function() {
+  var grid = document.getElementById("stuGrid");
+  if (grid && state.students && state.students.length > 0) {
+    grid.innerHTML = state.students.map(function(n) {
+      var s = state.scores[n] ?? 15;
+      return "<div class='stu-item'><span class='score-val'>" + s + "</span><span class='name-val'>" + n + "</span></div>";
+    }).join("");
+  }
+};
+
 function updateDateTime() {
   const now = new Date();
   const weeks = ["日","一","二","三","四","五","六"];
@@ -187,56 +198,62 @@ function renderRankings() {
 // 学生网格
 // ============================================================
 function renderStudentGrid() {
-  const grid = document.getElementById("stuGrid");
-  const optOuts = state.phoneOptOuts || { noon: [], evening: [] };
-  const noonSet = new Set(optOuts.noon);
-  const eveningSet = new Set(optOuts.evening);
-  const punishData = state.punishData || { punishRecords: {}, maxDoneLevel: {} };
-  const records = punishData.punishRecords || {};
-  const maxDone = punishData.maxDoneLevel || {};
-
-  var pendingCount = 0;
-  grid.innerHTML = state.students.map(function(name) {
-    const score = state.scores[name] ?? 15;
-    const sel = state.selected.has(name) ? "selected" : "";
-    // Phone opt-out tag
-    var tag = "";
-    if (noonSet.has(name) && eveningSet.has(name)) tag = "both";
-    else if (noonSet.has(name)) tag = "noon";
-    else if (eveningSet.has(name)) tag = "evening";
-    var tagLabel = tag === "both" ? "全免" : tag === "noon" ? "午免" : tag === "evening" ? "晚免" : "";
-    var tagClass = tag ? "opt-out-tag " + tag : "";
-
-    // Punishment tag (red/green/gray)
-    var lv = score <= -15 ? 15 : score <= -10 ? 10 : score <= -5 ? 5 : 0;
-    var punishHtml = "";
-    if (lv > 0) {
-      if (records[name + "_" + lv]) { punishHtml = "<span class='punish-tag tag-green'>已收" + (lv/5) + "晚</span>"; }
-      else if ((maxDone[name] || 0) > lv) { punishHtml = "<span class='punish-tag tag-gray'>🛡️ 豁免</span>"; }
-      else { punishHtml = "<span class='punish-tag tag-red'>🚨 待收" + (lv/5) + "晚</span>"; if (state.selected.has(name)) pendingCount++; }
+  var grid = document.getElementById("stuGrid");
+  if (!grid) { console.error("stuGrid not found"); return; }
+  try {
+    var optOuts = state.phoneOptOuts || { noon: [], evening: [] };
+    var noonSet = new Set(optOuts.noon);
+    var eveningSet = new Set(optOuts.evening);
+    var pd = state.punishData || {};
+    var records = pd.punishRecords || {};
+    var maxDone = pd.maxDoneLevel || {};
+    var html = "";
+    var pendingCount = 0;
+    
+    for (var i = 0; i < state.students.length; i++) {
+      var name = state.students[i];
+      var score = state.scores[name] ?? 15;
+      var sel = state.selected.has(name) ? "selected" : "";
+      
+      // Phone tag
+      var hasNoon = noonSet.has(name);
+      var hasEve = eveningSet.has(name);
+      var tagLabel = "";
+      var tagClass = "";
+      if (hasNoon && hasEve) { tagLabel = "全免"; tagClass = "opt-out-tag both"; }
+      else if (hasNoon) { tagLabel = "午免"; tagClass = "opt-out-tag noon"; }
+      else if (hasEve) { tagLabel = "晚免"; tagClass = "opt-out-tag evening"; }
+      
+      // Punishment tag
+      var lv = score <= -15 ? 15 : score <= -10 ? 10 : score <= -5 ? 5 : 0;
+      var pTag = "";
+      if (lv > 0) {
+        if (records[name + "_" + lv]) { pTag = "<span class='punish-tag tag-green'>已收" + (lv/5) + "晚</span>"; }
+        else if ((maxDone[name] || 0) > lv) { pTag = "<span class='punish-tag tag-gray'>豁免</span>"; }
+        else { pTag = "<span class='punish-tag tag-red'>待收" + (lv/5) + "晚</span>"; if (state.selected.has(name)) pendingCount++; }
+      }
+      
+      // Standing penalty
+      var standTag = "";
+      if (score < 0) { standTag = "<span class='punish-tag tag-standing'>站立" + Math.abs(score) + "天</span>"; }
+      
+      var tag = "";
+      if (tagLabel) tag = "<span class='" + tagClass + "'>" + tagLabel + "</span>";
+      
+      html += "<div class='stu-item " + sel + "' onclick="toggleSelect('" + name.replace(/'/g, "\'") + "')">" +
+        "<span class='score-val'>" + score + "</span>" +
+        "<span class='name-val'>" + name + "</span>" +
+        tag + pTag + standTag + "</div>";
     }
-
-    // Standing penalty for negative scores
-    var standHtml = "";
-    if (score < 0) {
-      standHtml = "<span class='punish-tag tag-standing'>🧍 早自习站立 " + Math.abs(score) + "天</span>";
+    
+    grid.innerHTML = html;
+    var pBtn = document.getElementById("confirmPunishBtn");
+    if (pBtn) {
+      pBtn.textContent = pendingCount > 0 ? "确认收纳(" + pendingCount + "人)" : "无待扣项";
+      pBtn.disabled = pendingCount === 0;
     }
-
-    return "<div class='stu-item " + sel + "' onclick="toggleSelect('" + name + "')">" +
-      "<span class='score-val'>" + score + "</span>" +
-      "<span class='name-val'>" + name + "</span>" +
-      (tagLabel ? "<span class='" + tagClass + "'>" + tagLabel + "</span>" : "") +
-      punishHtml + standHtml +
-    "</div>";
-  }).join("");
-
-  // Update pending count badge
-  var pBtn = document.getElementById("confirmPunishBtn");
-  if (pBtn) {
-    pBtn.textContent = pendingCount > 0 ? "🤝 确认收纳 (" + pendingCount + "人)" : "🤝 无待扣项";
-    pBtn.disabled = pendingCount === 0;
-  }
-  updateSelectedCount();
+    updateSelectedCount();
+  } catch(e) { console.error("renderStudentGrid error:", e); }
 }
 function toggleSelect(name) {
   if (state.user.role === "guest") return;
