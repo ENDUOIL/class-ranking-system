@@ -68,6 +68,7 @@ const users = {
   await setKV(env, "calendar", DEFAULT_CALENDAR);
   await setKV(env, "phoneOptOuts", {});
   await setKV(env, "todayDeductions", {});
+  await setKV(env, "punishData", { punishRecords: {}, maxDoneLevel: {} });
   await setKV(env, "tokens", {});
   await setKV(env, "_initialized", "yes");
 }
@@ -284,6 +285,45 @@ app.post("/api/scores/reset", authMiddleware, superAdminOnly, async (c) => {
 app.get("/api/logs", async (c) => {
   const logs = await getKV(c.env, "logs", []);
   return c.json({ logs });
+});
+
+
+// ============================================================
+// API - 获取惩罚数据（公开）
+// ============================================================
+app.get("/api/punish", async (c) => {
+  const punishData = await getKV(c.env, "punishData", { punishRecords: {}, maxDoneLevel: {} });
+  return c.json(punishData);
+});
+
+// ============================================================
+// API - 确认手机收纳（管理员）
+// ============================================================
+app.post("/api/punish/confirm", authMiddleware, adminOnly, async (c) => {
+  const { names } = await c.req.json();
+  if (!names || names.length === 0) return c.json({ error: "请选择学生" }, 400);
+  const punishData = await getKV(c.env, "punishData", { punishRecords: {}, maxDoneLevel: {} });
+  const scores = await getKV(c.env, "scores", {});
+  names.forEach(name => {
+    const s = scores[name] || 15;
+    let lv = s <= -15 ? 15 : s <= -10 ? 10 : s <= -5 ? 5 : 0;
+    if (lv > 0) {
+      punishData.punishRecords[name + "_" + lv] = true;
+      punishData.maxDoneLevel[name] = Math.max(punishData.maxDoneLevel[name] || 0, lv);
+    }
+  });
+  await setKV(c.env, "punishData", punishData);
+  await addLog(c.env, c.get("user"), "手机收纳确认", "确认了 " + names.join("、") + " 的手机收纳");
+  return c.json({ ok: true, punishData });
+});
+
+// ============================================================
+// API - 重置惩罚状态（管理员）
+// ============================================================
+app.post("/api/punish/reset", authMiddleware, adminOnly, async (c) => {
+  await setKV(c.env, "punishData", { punishRecords: {}, maxDoneLevel: {} });
+  await addLog(c.env, c.get("user"), "重置惩罚状态", "清除了所有手机收纳记录");
+  return c.json({ ok: true });
 });
 
 // ============================================================

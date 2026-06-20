@@ -2,7 +2,7 @@
 // 25.1班操行排位赛 - 前端逻辑
 // ============================================================
 const API = "";
-let state = { token: null, user: null, students: [], scores: {}, selected: new Set(), phoneOptOuts: { noon: [], evening: [] } };
+let state = { token: null, user: null, students: [], scores: {}, punishData: { punishRecords: {}, maxDoneLevel: {} }, selected: new Set(), phoneOptOuts: { noon: [], evening: [] } };
 
 // ============================================================
 // HTTP 请求
@@ -120,6 +120,7 @@ async function loadApp() {
     const data = await api("/api/scores");
     state.students = data.students;
     state.scores = data.scores;
+    try { var pd = await api("/api/punish"); state.punishData = pd; } catch {}
 
     // 加载手机豁免
     try { await refreshPhoneOptOut(); } catch {}
@@ -190,26 +191,53 @@ function renderStudentGrid() {
   const optOuts = state.phoneOptOuts || { noon: [], evening: [] };
   const noonSet = new Set(optOuts.noon);
   const eveningSet = new Set(optOuts.evening);
-  const isGuest = state.user.role === "guest";
+  const punishData = state.punishData || { punishRecords: {}, maxDoneLevel: {} };
+  const records = punishData.punishRecords || {};
+  const maxDone = punishData.maxDoneLevel || {};
 
-  grid.innerHTML = state.students.map(name => {
+  var pendingCount = 0;
+  grid.innerHTML = state.students.map(function(name) {
     const score = state.scores[name] ?? 15;
     const sel = state.selected.has(name) ? "selected" : "";
-    let tag = "";
+    // Phone opt-out tag
+    var tag = "";
     if (noonSet.has(name) && eveningSet.has(name)) tag = "both";
     else if (noonSet.has(name)) tag = "noon";
     else if (eveningSet.has(name)) tag = "evening";
-    const tagLabel = tag === "both" ? "全免" : tag === "noon" ? "午免" : tag === "evening" ? "晚免" : "";
-    const tagClass = tag ? `opt-out-tag ${tag}` : "";
-    return `<div class="stu-item ${sel}" onclick="toggleSelect('${name}')">
-      <span class="score-val">${score}</span>
-      <span class="name-val">${name}</span>
-      ${tagLabel ? `<span class="${tagClass}">${tagLabel}</span>` : ""}
-    </div>`;
+    var tagLabel = tag === "both" ? "全免" : tag === "noon" ? "午免" : tag === "evening" ? "晚免" : "";
+    var tagClass = tag ? "opt-out-tag " + tag : "";
+
+    // Punishment tag (red/green/gray)
+    var lv = score <= -15 ? 15 : score <= -10 ? 10 : score <= -5 ? 5 : 0;
+    var punishHtml = "";
+    if (lv > 0) {
+      if (records[name + "_" + lv]) { punishHtml = "<span class='punish-tag tag-green'>已收" + (lv/5) + "晚</span>"; }
+      else if ((maxDone[name] || 0) > lv) { punishHtml = "<span class='punish-tag tag-gray'>🛡️ 豁免</span>"; }
+      else { punishHtml = "<span class='punish-tag tag-red'>🚨 待收" + (lv/5) + "晚</span>"; if (state.selected.has(name)) pendingCount++; }
+    }
+
+    // Standing penalty for negative scores
+    var standHtml = "";
+    if (score < 0) {
+      standHtml = "<span class='punish-tag tag-standing'>🧍 早自习站立 " + Math.abs(score) + "天</span>";
+    }
+
+    return "<div class='stu-item " + sel + "' onclick="toggleSelect('" + name + "')">" +
+      "<span class='score-val'>" + score + "</span>" +
+      "<span class='name-val'>" + name + "</span>" +
+      (tagLabel ? "<span class='" + tagClass + "'>" + tagLabel + "</span>" : "") +
+      punishHtml + standHtml +
+    "</div>";
   }).join("");
+
+  // Update pending count badge
+  var pBtn = document.getElementById("confirmPunishBtn");
+  if (pBtn) {
+    pBtn.textContent = pendingCount > 0 ? "🤝 确认收纳 (" + pendingCount + "人)" : "🤝 无待扣项";
+    pBtn.disabled = pendingCount === 0;
+  }
   updateSelectedCount();
 }
-
 function toggleSelect(name) {
   if (state.user.role === "guest") return;
   if (state.selected.has(name)) state.selected.delete(name);
@@ -251,6 +279,7 @@ async function applyRule() {
     state.scores = data.scores;
     state.selected.clear();
     renderAll();
+    try { var pd = await api("/api/punish"); state.punishData = pd; } catch {}
     alert("✅ 操作成功！");
   } catch (e) { alert("操作失败：" + e.message); }
 }
@@ -269,6 +298,7 @@ async function applyFlex() {
     state.scores = data.scores;
     state.selected.clear();
     renderAll();
+    try { var pd = await api("/api/punish"); state.punishData = pd; } catch {}
     document.getElementById("flexVal").value = "";
     document.getElementById("flexReason").value = "";
     alert("✅ 调整成功！");
@@ -795,6 +825,58 @@ function renderAll() {
 // ============================================================
 // 模态框点击外部关闭
 // ============================================================
+
+// ============================================================
+// 手机收纳确认与惩罚
+// ============================================================
+async function confirmPunish() {
+  if (state.user.role === "guest") return;
+  var pendingNames = [];
+  var punishData = state.punishData || { punishRecords: {}, maxDoneLevel: {} };
+  var records = punishData.punishRecords || {};
+  var maxDone = punishData.maxDoneLevel || {};
+  state.selected.forEach(function(name) {
+    var score = state.scores[name] ?? 15;
+    var lv = score <= -15 ? 15 : score <= -10 ? 10 : score <= -5 ? 5 : 0;
+    if (lv > 0 && !records[name + "_" + lv] && (maxDone[name] || 0) <= lv) {
+      pendingNames.push(name);
+    }
+  });
+  if (pendingNames.length === 0) return alert("所选学生中没有待收纳的");
+  if (!confirm("确认收纳以下学生的手机？\n" + pendingNames.join("、"))) return;
+  try {
+    var data = await api("/api/punish/confirm", { method: "POST", body: JSON.stringify({ names: pendingNames }) });
+    state.punishData = data.punishData;
+    state.selected.clear();
+    renderStudentGrid();
+    alert("✅ 手机收纳已确认");
+  } catch (e) { alert("操作失败：" + e.message); }
+}
+
+async function resetPunishStatus() {
+  if (state.user.role === "guest") return;
+  if (!confirm("确定清除所有红标（手机收纳记录）？")) return;
+  try {
+    await api("/api/punish/reset", { method: "POST" });
+    state.punishData = { punishRecords: {}, maxDoneLevel: {} };
+    renderStudentGrid();
+    alert("✅ 红标已清除");
+  } catch (e) { alert("操作失败：" + e.message); }
+}
+
+function getPunishTag(name, score) {
+  var pd = state.punishData || { punishRecords: {}, maxDoneLevel: {} };
+  var records = pd.punishRecords || {};
+  var maxDone = pd.maxDoneLevel || {};
+  var lv = score <= -15 ? 15 : score <= -10 ? 10 : score <= -5 ? 5 : 0;
+  if (lv > 0) {
+    if (records[name + "_" + lv]) return { text: "已收" + (lv/5) + "晚", cls: "green" };
+    if ((maxDone[name] || 0) > lv) return { text: "🛡️ 豁免", cls: "gray" };
+    return { text: "🚨 待收" + (lv/5) + "晚", cls: "red" };
+  }
+  return null;
+}
+
 document.addEventListener("click", e => {
   if (e.target.classList.contains("modal")) {
     e.target.style.display = "none";

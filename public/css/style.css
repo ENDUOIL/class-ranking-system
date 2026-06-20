@@ -306,3 +306,45 @@ select.input { cursor: pointer; }
 /* ====== 登录按钮 ====== */
 .topbar-login { color: var(--green); border-color: rgba(42,157,143,0.3); }
 .topbar-login:hover { background: rgba(42,157,143,0.15); border-color: var(--green); }
+
+/* ====== 惩罚标签 ====== */
+.punish-tag {
+  position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+  font-size: 8px; padding: 1px 6px; border-radius: 3px;
+  white-space: nowrap; line-height: 1.6; z-index: 10;
+}
+.punish-tag.tag-red { background: var(--red); color: #fff; }
+.punish-tag.tag-green { background: var(--green); color: #fff; }
+.punish-tag.tag-gray { background: #555; color: #ccc; }
+.punish-tag.tag-standing { background: var(--orange); color: #000; bottom: -18px; font-size: 7px; }
+
+.stu-item { min-height: 75px; padding-bottom: 18px; }
+
+/* ====== 移动端适配 ====== */
+@media (max-width: 768px) {
+  .sidebar { width: 80px; }
+  .sidebar-title { font-size: 11px; padding: 6px; }
+  .rank-item { padding: 3px 4px; }
+  .rank-name { font-size: 10px; }
+  .rank-score { font-size: 9px; }
+  .stu-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .stu-item { min-height: 60px; padding: 4px 1px; font-size: 11px; }
+  .stu-item .score-val { font-size: 15px; }
+  .main-content { padding: 6px 8px; padding-bottom: 40px; }
+  .card { padding: 8px; }
+  .flex-row { flex-wrap: wrap; }
+  .topbar-title { font-size: 13px; }
+  .topbar-btn { font-size: 10px; padding: 4px 8px; }
+  .modal-content { width: 95vw; max-height: 90vh; }
+}
+@media (max-width: 400px) {
+  .sidebar { width: 65px; }
+  .rank-item { padding: 2px 3px; }
+  .rank-name { font-size: 9px; }
+  .stu-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar-title { font-size: 11px; }
+  .topbar-btn { font-size: 9px; padding: 3px 6px; }
+}
+
+/* ====== 底部留白 ====== */
+.main-content { padding-bottom: 60px; }
