@@ -568,7 +568,7 @@ select.input { cursor: pointer; }
       <div id="calendarPreview" class="calendar-preview"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="saveCalendar()">保存日历设置</button>
+      <button id="calendarSaveBtn" class="btn btn-primary" onclick="saveCalendar()">保存日历设置</button>
       <button class="btn btn-gray" onclick="closeCalendarModal()">取消</button>
     </div>
   </div>
@@ -1195,6 +1195,11 @@ async function updatePasswordSelect() {
 let calendarData = null;
 
 async function showCalendarModal() {
+  // Hide save button for non-admin users
+  var isAdmin = state.user && (state.user.role === "super_admin" || state.user.role === "admin");
+  var saveBtn = document.getElementById("calendarSaveBtn");
+  if (saveBtn) saveBtn.style.display = isAdmin ? "" : "none";
+
   try {
     const data = await api("/api/calendar");
     calendarData = data.calendar;
