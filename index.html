@@ -621,50 +621,48 @@ async function _hp(pwd) {
 // ============================================================
 async function api(path, opts) {
   if (!window.__CLS) {
-    try { var r = localStorage.getItem("cls_rank"); if (r) window.__CLS = JSON.parse(r); } catch(e){}
+    try { var r = localStorage.getItem('cls_rank'); if (r) window.__CLS = JSON.parse(r); } catch(e){}
     if (!window.__CLS) {
-      var lst = ["包顺通","郑清颢","邹仁泽","秦韵贺","赵巍霖","王晨旭","张广涛","程泓博","姜乙丰","唐佳奇","赵梓渤","吴俊霖","王译广"];
+      var lst = ['包顺通','郑清颢','邹仁泽','秦韵贺','赵巍霖','王晨旭','张广涛','程泓博','姜乙丰','唐佳奇','赵梓渤','吴俊霖','王译广'];
       var sc = {}; lst.forEach(function(n){ sc[n]=15; });
-      window.__CLS = { students:lst, scores:sc, users:{}, logs:[], calendar:{excludedWeekdays:[5,6,7],periods:[{start:"12-28",end:"03-03",label:"寒假",skipYearBoundary:true},{start:"07-05",end:"09-03",label:"暑假",skipYearBoundary:false}],customExclusions:[],customInclusions:[]}, phoneOptOuts:{}, todayDeductions:{}, punishData:{punishRecords:{},maxDoneLevel:{}}, tokens:{} };
+      window.__CLS = {students:lst, scores:sc, users:{}, logs:[], calendar:{excludedWeekdays:[5,6,7],periods:[{start:'12-28',end:'03-03',label:'寒假',skipYearBoundary:true},{start:'07-05',end:'09-03',label:'暑假',skipYearBoundary:false}],customExclusions:[],customInclusions:[]}, phoneOptOuts:{}, todayDeductions:{}, punishData:{punishRecords:{},maxDoneLevel:{}}, tokens:{}};
     }
-    // ALWAYS ensure users exist (fix old data that might have empty users)
     if (!window.__CLS.users || !window.__CLS.users.super) {
-      window.__CLS.users = { super:{password:"4779bda25d3be481c5b2697878d343e1120f3b4fb96e9fc2cc2746afdbd2a4cb",role:"super_admin",name:"超级管理员"}, admin:{password:"c75d3f1f5bcd6914d0331ce5ec17c0db8f2070a2d4285f8e3ff11c6ca19168ff",role:"admin",name:"管理员"} };
+      window.__CLS.users = {super:{password:'4779bda25d3be481c5b2697878d343e1120f3b4fb96e9fc2cc2746afdbd2a4cb',role:'super_admin',name:'超级管理员'},admin:{password:'c75d3f1f5bcd6914d0331ce5ec17c0db8f2070a2d4285f8e3ff11c6ca19168ff',role:'admin',name:'管理员'}};
     }
-    try { localStorage.setItem("cls_rank", JSON.stringify(window.__CLS)); } catch(e){}
+    try { localStorage.setItem('cls_rank', JSON.stringify(window.__CLS)); } catch(e){}
   }
   var D = window.__CLS;
-  var m = (opts&&opts.method)||"GET";
+  var m = (opts&&opts.method)||'GET';
   var b = opts&&opts.body ? JSON.parse(opts.body) : {};
   var nw = new Date();
-  function p2(n){ return String(n).padStart(2,"0"); }
-  var td = nw.getFullYear()+"-"+p2(nw.getMonth()+1)+"-"+p2(nw.getDate());
-  function _sv(){ try{localStorage.setItem("cls_rank",JSON.stringify(D));}catch(e){} }
+  function p2(n){ return String(n).padStart(2,'0'); }
+  var td = nw.getFullYear()+'-'+p2(nw.getMonth()+1)+'-'+p2(nw.getDate());
+  function _sv(){ try{localStorage.setItem('cls_rank',JSON.stringify(D));}catch(e){} }
   function _u(){ return state&&state.user?state.user:null; }
-  function _isA(){ var u=_u(); return u&&(u.role==="super_admin"||u.role==="admin"); }
-  function _isS(){ var u=_u(); return u&&u.role==="super_admin"; }
-  function _lg(ac,dt){ D.logs.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),timestamp:nw.toISOString(),user:(state&&state.user?state.user.name:"管理员"),role:(state&&state.user?state.user.role:"admin"),action:ac,detail:dt}); if(D.logs.length>500)D.logs.length=500; _sv(); }
-  if (path==="/api/login"){ var us=D.users||{}; return _hp(b.password||"").then(function(hp){ for(var u in us){if(us[u].password===hp){var tok=crypto.randomUUID();D.tokens[tok]={username:u,role:us[u].role,name:us[u].name||u,loginTime:Date.now()};_sv();_lg("登录系统","成功登录");return{token:tok,user:{username:u,role:us[u].role,name:us[u].name||u}};} throw new Error("密码错误");}});}
-  if (path==="/api/me") return {user:_u()};
-  if (path==="/api/logout"){ if(state.token&&D.tokens[state.token])delete D.tokens[state.token]; _sv(); return {ok:true}; }
-  if (path==="/api/scores") return{scores:D.scores||{},students:D.students||[]};
-  if (path==="/api/scores/adjust"){ if(!_isA())return Promise.reject(new Error("需要管理员权限")); var nn=(b.names||[]); var vv=parseInt(b.value); if(!nn.length)return Promise.reject(new Error("请选择学生")); nn.forEach(function(x){D.scores[x]=(D.scores[x]||15)+vv;}); _lg("积分调整",(b.reason||b.rule||"手动调整")+"："+nn.join("、")+"，分值："+(vv>0?"+":"")+vv); _sv(); return{scores:D.scores,success:nn,ok:true};}
-  if (path==="/api/scores/reset"){ if(!_isS())return Promise.reject(new Error("需要超级管理员权限")); if(b.code!=="25.1")return Promise.reject(new Error("验证码错误")); D.scores={}; D.students.forEach(function(s){D.scores[s]=15;}); _lg("赛季重置","全员积分复位为15分"); _sv(); return{scores:D.scores,ok:true};}
-  if (path==="/api/punish") return D.punishData||{punishRecords:{},maxDoneLevel:{}};
-  if (path==="/api/punish/confirm"){ if(!_isA())return Promise.reject(new Error("需要管理员权限")); (b.names||[]).forEach(function(n){var s=D.scores[n]||15;var lv=s<=-15?15:(s<=-10?10:(s<=-5?5:0));if(lv>0){D.punishData.punishRecords[n+"_"+lv]=true;D.punishData.maxDoneLevel[n]=Math.max(D.punishData.maxDoneLevel[n]||0,lv);}}); _lg("手机收纳确认","确认了 "+(b.names||[]).join("、")+" 的手机收纳"); _sv(); return{ok:true,punishData:D.punishData};}
-  if (path==="/api/punish/reset"){ D.punishData={punishRecords:{},maxDoneLevel:{}}; _sv(); return{ok:true};}
-  // Admin check for calendar POST - GUESTS can view, only admins can save
-  if (path==="/api/calendar"){ if(m==="GET")return{calendar:D.calendar||{}}; if(!_isA())return Promise.reject(new Error("需要管理员权限")); D.calendar=b; _lg("修改日历","修改了自动扣分日历配置"); _sv(); return{ok:true};}
-  if (path==="/api/deductions/today") return{date:td,deductions:(D.todayDeductions||{})[td]||{noon:false,evening:false}};
-  if (path==="/api/phone-opt-out"){ if(m==="GET")return{date:td,optOuts:(D.phoneOptOuts||{})[td]||{noon:[],evening:[]}}; if(!_isA())return Promise.reject(new Error("需要管理员权限")); var dt=b.date||td; if(!D.phoneOptOuts[dt])D.phoneOptOuts[dt]={noon:[],evening:[]}; D.phoneOptOuts[dt][b.slot]=b.names||[]; _sv(); return{ok:true};}
-  if (path==="/api/logs"){ if(m==="DELETE"){if(!_isS())return Promise.reject(new Error("需要超级管理员权限"));D.logs=[];_sv();return{ok:true};} return{logs:D.logs||[]};}
-  if (path==="/api/admins"&&m==="GET"){var aa=[];for(var ux in D.users){if(D.users[ux].role==="admin")aa.push({username:ux,name:D.users[ux].name});}return{admins:aa};}
-  if (path==="/api/admins"&&m==="POST"){if(!_isS())return Promise.reject(new Error("需要超级管理员权限"));if(D.users[b.username])return Promise.reject(new Error("用户已存在"));return _hp(b.password||"").then(function(hp){D.users[b.username]={password:hp,role:"admin",name:b.name||b.username};_lg("新增管理员","新增管理员"+b.username);_sv();return{ok:true};});}
-  if (m==="DELETE"&&path.indexOf("/api/admins/")===0){if(!_isS())return Promise.reject(new Error("需要超级管理员权限"));var u4=decodeURIComponent(path.replace("/api/admins/",""));if(!D.users[u4])return Promise.reject(new Error("管理员不存在"));delete D.users[u4];_sv();return{ok:true};}
-  if (path==="/api/admins/password"){if(!_isS())return Promise.reject(new Error("需要超级管理员权限"));if(!D.users[b.username])return Promise.reject(new Error("用户不存在"));return _hp(b.newPassword||"").then(function(hp){D.users[b.username].password=hp;_sv();return{ok:true};});}
-  if (path==="/api/students"&&m==="POST"){if(!_isS())return Promise.reject(new Error("需要超级管理员权限"));var n3=(b.name||"").trim();if(!n3)return Promise.reject(new Error("请输入姓名"));if(D.students.indexOf(n3)>=0)return Promise.reject(new Error("该学生已存在"));D.students.push(n3);D.scores[n3]=15;_lg("新增学生","新增学生"+n3);_sv();return{students:D.students,ok:true};}
-  if (m==="DELETE"&&path.indexOf("/api/students/")===0){if(!_isS())return Promise.reject(new Error("需要超级管理员权限"));var n4=decodeURIComponent(path.replace("/api/students/",""));var idx=D.students.indexOf(n4);if(idx<0)return Promise.reject(new Error("学生不存在"));D.students.splice(idx,1);delete D.scores[n4];_sv();return{students:D.students,ok:true};}
-  throw new Error("未知 API: "+path);
+  function _isA(){ var u=_u(); return u&&(u.role==='super_admin'||u.role==='admin'); }
+  function _isS(){ var u=_u(); return u&&u.role==='super_admin'; }
+  function _lg(ac,dt){ D.logs.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),timestamp:nw.toISOString(),user:(state&&state.user?state.user.name:'管理员'),role:(state&&state.user?state.user.role:'admin'),action:ac,detail:dt}); if(D.logs.length>500)D.logs.length=500; _sv(); }
+  if (path==='/api/login'){ var us=D.users||{}; return _hp(b.password||'').then(function(hp){ for(var u in us){if(us[u].password===hp){var tok=crypto.randomUUID();D.tokens[tok]={username:u,role:us[u].role,name:us[u].name||u,loginTime:Date.now()};_sv();_lg('登录系统','成功登录');return{token:tok,user:{username:u,role:us[u].role,name:us[u].name||u}};} throw new Error('密码错误');}});}
+  if (path==='/api/me') return {user:_u()};
+  if (path==='/api/logout'){ if(state.token&&D.tokens[state.token])delete D.tokens[state.token]; _sv(); return {ok:true}; }
+  if (path==='/api/scores') return{scores:D.scores||{},students:D.students||[]};
+  if (path==='/api/scores/adjust'){ if(!_isA())return Promise.reject(new Error('需要管理员权限')); var nn=(b.names||[]); var vv=parseInt(b.value); if(!nn.length)return Promise.reject(new Error('请选择学生')); nn.forEach(function(x){D.scores[x]=(D.scores[x]||15)+vv;}); _lg('积分调整',(b.reason||b.rule||'手动调整')+'：'+nn.join('、')+'，分值：'+(vv>0?'+':'')+vv); _sv(); return{scores:D.scores,success:nn,ok:true};}
+  if (path==='/api/scores/reset'){ if(!_isS())return Promise.reject(new Error('需要超级管理员权限')); if(b.code!=='25.1')return Promise.reject(new Error('验证码错误')); D.scores={}; D.students.forEach(function(s){D.scores[s]=15;}); _lg('赛季重置','全员积分复位为15分'); _sv(); return{scores:D.scores,ok:true};}
+  if (path==='/api/punish') return D.punishData||{punishRecords:{},maxDoneLevel:{}};
+  if (path==='/api/punish/confirm'){ if(!_isA())return Promise.reject(new Error('需要管理员权限')); (b.names||[]).forEach(function(n){var s=D.scores[n]||15;var lv=s<=-15?15:(s<=-10?10:(s<=-5?5:0));if(lv>0){D.punishData.punishRecords[n+'_'+lv]=true;D.punishData.maxDoneLevel[n]=Math.max(D.punishData.maxDoneLevel[n]||0,lv);}}); _lg('手机收纳确认','确认了 '+(b.names||[]).join('、')+' 的手机收纳'); _sv(); return{ok:true,punishData:D.punishData};}
+  if (path==='/api/punish/reset'){ D.punishData={punishRecords:{},maxDoneLevel:{}}; _sv(); return{ok:true};}
+  if (path==='/api/calendar'){ if(m==='GET')return{calendar:D.calendar||{}}; if(!_isA())return Promise.reject(new Error('需要管理员权限')); D.calendar=b; _lg('修改日历','修改了自动扣分日历配置'); _sv(); return{ok:true};}
+  if (path==='/api/deductions/today') return{date:td,deductions:(D.todayDeductions||{})[td]||{noon:false,evening:false}};
+  if (path==='/api/phone-opt-out'){ if(m==='GET')return{date:td,optOuts:(D.phoneOptOuts||{})[td]||{noon:[],evening:[]}}; if(!_isA())return Promise.reject(new Error('需要管理员权限')); var dt=b.date||td; if(!D.phoneOptOuts[dt])D.phoneOptOuts[dt]={noon:[],evening:[]}; D.phoneOptOuts[dt][b.slot]=b.names||[]; _sv(); return{ok:true};}
+  if (path==='/api/logs'){ if(m==='DELETE'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));D.logs=[];_sv();return{ok:true};} return{logs:D.logs||[]};}
+  if (path==='/api/admins'&&m==='GET'){var aa=[];for(var ux in D.users){if(D.users[ux].role==='admin')aa.push({username:ux,name:D.users[ux].name});}return{admins:aa};}
+  if (path==='/api/admins'&&m==='POST'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));if(D.users[b.username])return Promise.reject(new Error('用户已存在'));return _hp(b.password||'').then(function(hp){D.users[b.username]={password:hp,role:'admin',name:b.name||b.username};_lg('新增管理员','新增管理员'+b.username);_sv();return{ok:true};});}
+  if (m==='DELETE'&&path.indexOf('/api/admins/')===0){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));var u4=decodeURIComponent(path.replace('/api/admins/',''));if(!D.users[u4])return Promise.reject(new Error('管理员不存在'));delete D.users[u4];_sv();return{ok:true};}
+  if (path==='/api/admins/password'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));if(!D.users[b.username])return Promise.reject(new Error('用户不存在'));return _hp(b.newPassword||'').then(function(hp){D.users[b.username].password=hp;_sv();return{ok:true};});}
+  if (path==='/api/students'&&m==='POST'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));var n3=(b.name||'').trim();if(!n3)return Promise.reject(new Error('请输入姓名'));if(D.students.indexOf(n3)>=0)return Promise.reject(new Error('该学生已存在'));D.students.push(n3);D.scores[n3]=15;_lg('新增学生','新增学生'+n3);_sv();return{students:D.students,ok:true};}
+  if (m==='DELETE'&&path.indexOf('/api/students/')===0){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));var n4=decodeURIComponent(path.replace('/api/students/',''));var idx=D.students.indexOf(n4);if(idx<0)return Promise.reject(new Error('学生不存在'));D.students.splice(idx,1);delete D.scores[n4];_sv();return{students:D.students,ok:true};}
+  throw new Error('未知 API: '+path);
 }
 
 // ============================================================
@@ -1195,10 +1193,9 @@ async function updatePasswordSelect() {
 let calendarData = null;
 
 async function showCalendarModal() {
-  // Hide save button for non-admin users
-  var isAdmin = state.user && (state.user.role === "super_admin" || state.user.role === "admin");
-  var saveBtn = document.getElementById("calendarSaveBtn");
-  if (saveBtn) saveBtn.style.display = isAdmin ? "" : "none";
+  var _isAdm = state.user && (state.user.role === 'super_admin' || state.user.role === 'admin');
+  var _sb = document.getElementById('calendarSaveBtn');
+  if (_sb) _sb.style.display = _isAdm ? '' : 'none';
 
   try {
     const data = await api("/api/calendar");
