@@ -51,8 +51,8 @@ const DEFAULT_CALENDAR = {
 // 初始化 KV（首次部署时写入默认数据）
 // ============================================================
 async function ensureInitialized(env) {
-  const init = await env.RANKING_KV.get("_initialized");
-  if (init === "yes") return;
+  const existingStudents = await getKV(env, "students");
+  if (existingStudents && existingStudents.length > 0) return;
   const superHash = await hashPassword("yangjian1");
   const adminHash2 = await hashPassword("251");
 const users = {
@@ -69,7 +69,6 @@ const users = {
   await setKV(env, "phoneOptOuts", {});
   await setKV(env, "todayDeductions", {});
   await setKV(env, "punishData", { punishRecords: {}, maxDoneLevel: {} });
-  await setKV(env, "tokens", {});
   await setKV(env, "_initialized", "yes");
 }
 
