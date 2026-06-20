@@ -5,6 +5,12 @@ compatibility_flags = ["nodejs_compat"]
 
 assets = { directory = "./public" }
 
+
+# Custom domain route (China access)
+routes = [
+  { pattern = "djx.msyszl.ccwu.cc/*", zone_id = "b21cf74c6292c24293889519319be888" }
+]
+
 [[kv_namespaces]]
 binding = "RANKING_KV"
 id = "932e936290664726be3d082e69315bbe"
@@ -12,3 +18,5 @@ preview_id = "932e936290664726be3d082e69315bbe"
 
 [triggers]
 crons = ["0 12 * * 1-4", "45 16 * * 1-4"]
+
+

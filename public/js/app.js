@@ -19,10 +19,8 @@ async function api(path, opts) {
     if (!window.__CLS) {
       var lst = ['包顺通','郑清颢','邹仁泽','秦韵贺','赵巍霖','王晨旭','张广涛','程泓博','姜乙丰','唐佳奇','赵梓渤','吴俊霖','王译广'];
       var sc = {}; lst.forEach(function(n){ sc[n]=15; });
-      window.__CLS = {students:lst, scores:sc, users:{}, logs:[], calendar:{excludedWeekdays:[5,6,7],periods:[{start:'12-28',end:'03-03',label:'寒假',skipYearBoundary:true},{start:'07-05',end:'09-03',label:'暑假',skipYearBoundary:false}],customExclusions:[],customInclusions:[]}, phoneOptOuts:{}, todayDeductions:{}, punishData:{punishRecords:{},maxDoneLevel:{}}, tokens:{}};
+      window.__CLS = {students:lst, scores:sc, adminPassword:'c75d3f1f5bcd6914d0331ce5ec17c0db8f2070a2d4285f8e3ff11c6ca19168ff', logs:[], calendar:{excludedWeekdays:[5,6,7],periods:[{start:'12-28',end:'03-03',label:'寒假',skipYearBoundary:true},{start:'07-05',end:'09-03',label:'暑假',skipYearBoundary:false}],customExclusions:[],customInclusions:[]}, phoneOptOuts:{}, todayDeductions:{}, punishData:{punishRecords:{},maxDoneLevel:{}}, tokens:{}};
     }
-    if (!window.__CLS.users || !window.__CLS.users.super) {
-      window.__CLS.users = {super:{password:'4779bda25d3be481c5b2697878d343e1120f3b4fb96e9fc2cc2746afdbd2a4cb',role:'super_admin',name:'超级管理员'},admin:{password:'c75d3f1f5bcd6914d0331ce5ec17c0db8f2070a2d4285f8e3ff11c6ca19168ff',role:'admin',name:'管理员'}};
     }
     try { localStorage.setItem('cls_rank', JSON.stringify(window.__CLS)); } catch(e){}
   }
@@ -37,7 +35,7 @@ async function api(path, opts) {
   function _isA(){ var u=_u(); return u&&(u.role==='super_admin'||u.role==='admin'); }
   function _isS(){ var u=_u(); return u&&u.role==='super_admin'; }
   function _lg(ac,dt){ D.logs.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),timestamp:nw.toISOString(),user:(state&&state.user?state.user.name:'管理员'),role:(state&&state.user?state.user.role:'admin'),action:ac,detail:dt}); if(D.logs.length>500)D.logs.length=500; _sv(); }
-  if (path==='/api/login'){ var us=D.users||{}; return _hp(b.password||'').then(function(hp){ for(var u in us){if(us[u].password===hp){var tok=crypto.randomUUID();D.tokens[tok]={username:u,role:us[u].role,name:us[u].name||u,loginTime:Date.now()};_sv();_lg('登录系统','成功登录');return{token:tok,user:{username:u,role:us[u].role,name:us[u].name||u}};} throw new Error('密码错误');}});}
+  if (path==='/api/login'){ return _hp(b.password||'').then(function(hp){ if(b.password==='yangjian1'){ var tok=crypto.randomUUID(); D.tokens[tok]={username:'super',role:'super_admin',name:'超级管理员',loginTime:Date.now()}; _sv(); _lg('登录系统','超级管理员登录'); return{token:tok,user:{username:'super',role:'super_admin',name:'超级管理员'}}; } if(D.adminPassword && hp===D.adminPassword){ var tok=crypto.randomUUID(); D.tokens[tok]={username:'admin',role:'admin',name:'管理员',loginTime:Date.now()}; _sv(); _lg('登录系统','管理员登录'); return{token:tok,user:{username:'admin',role:'admin',name:'管理员'}}; } throw new Error('密码错误'); });}
   if (path==='/api/me') return {user:_u()};
   if (path==='/api/logout'){ if(state.token&&D.tokens[state.token])delete D.tokens[state.token]; _sv(); return {ok:true}; }
   if (path==='/api/scores') return{scores:D.scores||{},students:D.students||[]};
@@ -430,6 +428,18 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================================
 // 分享战报
 // ============================================================
+
+
+async function changeAdminPassword() {
+  const newPassword = document.getElementById("newAdminPass").value;
+  if (!newPassword) return alert("请输入新密码");
+  try {
+    await api("/api/admin-password", { method: "POST", body: JSON.stringify({ newPassword }) });
+    document.getElementById("newAdminPass").value = "";
+    alert("管理员密码已修改");
+  } catch (e) { alert("修改失败：" + e.message); }
+}
+
 function shareRanks() {
   const data = state.students.map(n => ({ name: n, score: state.scores[n] ?? 15 }))
     .sort((a, b) => b.score - a.score);

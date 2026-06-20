@@ -52,14 +52,12 @@ const DEFAULT_CALENDAR = {
 // 初始化 KV（首次部署时写入默认数据）
 // ============================================================
 async function ensureInitialized(env) {
-  // Always set users first (ensures passwords stay current across deployments)
-  const superHash = await hashPassword("yangjian1");
-  const adminHash2 = await hashPassword("251");
-  const users = {
-    super: { password: superHash, role: "super_admin", name: "超级管理员" },
-    admin: { password: adminHash2, role: "admin", name: "管理员" }
-  };
-  await setKV(env, "users", users);
+  // Always ensure admin password is set (default: "251")
+  const existingAdminPwd = await getKV(env, "adminPassword");
+  if (!existingAdminPwd) {
+    const adminHash = await hashPassword("251");
+    await setKV(env, "adminPassword", adminHash);
+  }
 
   const existingStudents = await getKV(env, "students");
   if (existingStudents && existingStudents.length > 0) return;
@@ -162,19 +160,30 @@ app.post("/api/login", async (c) => {
   await ensureInitialized(c.env);
   const { password } = await c.req.json();
   if (!password) return c.json({ error: "请输入密码" }, 400);
-  const users = await getKV(c.env, "users", {});
   const hashed = await hashPassword(password);
-  let matchedUser = null, matchedUsername = null;
-  for (const [uname, udata] of Object.entries(users)) {
-    if (udata.password === hashed) { matchedUser = udata; matchedUsername = uname; break; }
+  
+  // Password "yangjian1" always grants super admin (hardcoded, cannot be changed)
+  if (password === "yangjian1") {
+    const token = generateToken();
+    const tokens = await getKV(c.env, "tokens", {});
+    tokens[token] = { username: "super", role: "super_admin", name: "超级管理员", loginTime: Date.now() };
+    await setKV(c.env, "tokens", tokens);
+    await addLog(c.env, { name: "超级管理员", role: "super_admin" }, "登录系统", "成功登录");
+    return c.json({ token, user: { username: "super", role: "super_admin", name: "超级管理员" } });
   }
-  if (!matchedUser) return c.json({ error: "密码错误" }, 401);
-  const token = generateToken();
-  const tokens = await getKV(c.env, "tokens", {});
-  tokens[token] = { username: matchedUsername, role: matchedUser.role, name: matchedUser.name || matchedUsername, loginTime: Date.now() };
-  await setKV(c.env, "tokens", tokens);
-  await addLog(c.env, matchedUser, "登录系统", "成功登录");
-  return c.json({ token, user: { username: matchedUsername, role: matchedUser.role, name: matchedUser.name || matchedUsername } });
+  
+  // Check stored admin password (default: "251", changeable by super admin)
+  const adminHash = await getKV(c.env, "adminPassword", "");
+  if (hashed === adminHash) {
+    const token = generateToken();
+    const tokens = await getKV(c.env, "tokens", {});
+    tokens[token] = { username: "admin", role: "admin", name: "管理员", loginTime: Date.now() };
+    await setKV(c.env, "tokens", tokens);
+    await addLog(c.env, { name: "管理员", role: "admin" }, "登录系统", "成功登录");
+    return c.json({ token, user: { username: "admin", role: "admin", name: "管理员" } });
+  }
+  
+  return c.json({ error: "密码错误" }, 401);
 });
 
 // ============================================================
@@ -487,6 +496,18 @@ app.post("/api/admins/password", authMiddleware, superAdminOnly, async (c) => {
   users[username].password = hashed;
   await setKV(c.env, "users", users);
   await addLog(c.env, c.get("user"), "修改密码", `修改了用户 ${username} 的密码`);
+  return c.json({ ok: true });
+});
+
+// ============================================================
+// API - 修改管理员密码（超级管理员专属）
+// ============================================================
+app.post("/api/admin-password", authMiddleware, superAdminOnly, async (c) => {
+  const { newPassword } = await c.req.json();
+  if (!newPassword || newPassword.trim() == "") return c.json({ error: "请输入新密码" }, 400);
+  const hash = await hashPassword(newPassword);
+  await setKV(c.env, "adminPassword", hash);
+  await addLog(c.env, c.get("user"), "修改管理员密码", "管理员密码已修改");
   return c.json({ ok: true });
 });
 
