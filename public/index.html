@@ -64,27 +64,7 @@
           </div>
         </div>
 
-        <div id="adminMgmtSection" class="card" style="display:none">
-          <div class="section-title">👥 管理员管理</div>
-          <details>
-            <summary style="cursor:pointer;color:var(--gold);font-size:13px;">展开管理</summary>
-            <div style="margin-top:8px;">
-              <div class="flex-row">
-                <input type="text" id="newAdminUser" class="input flex-1" placeholder="新管理员用户名">
-                <input type="password" id="newAdminPass" class="input flex-1" placeholder="密码">
-                <input type="text" id="newAdminName" class="input flex-1" placeholder="显示名称">
-                <button class="btn btn-small btn-primary" onclick="addAdmin()">新增</button>
-              </div>
-              <div id="adminList" class="flex-col" style="margin-top:6px;gap:4px;"></div>
-              <div class="section-subtitle" style="margin-top:8px;">修改管理员密码</div>
-              <div class="flex-row">
-                <select id="changePassUser" class="input flex-1"><option value="">选择用户</option></select>
-                <input type="password" id="newPassword" class="input flex-1" placeholder="新密码">
-                <button class="btn btn-small btn-warning" onclick="changeAdminPassword()">修改</button>
-              </div>
-            </div>
-          </details>
-        </div>
+
 
         <div class="card">
           <div class="section-title">⚖️ 积分调整</div>

@@ -50,10 +50,6 @@ async function api(path, opts) {
   if (path==='/api/deductions/today') return{date:td,deductions:(D.todayDeductions||{})[td]||{noon:false,evening:false}};
   if (path==='/api/phone-opt-out'){ if(m==='GET')return{date:td,optOuts:(D.phoneOptOuts||{})[td]||{noon:[],evening:[]}}; if(!_isA())return Promise.reject(new Error('需要管理员权限')); var dt=b.date||td; if(!D.phoneOptOuts[dt])D.phoneOptOuts[dt]={noon:[],evening:[]}; D.phoneOptOuts[dt][b.slot]=b.names||[]; _sv(); return{ok:true};}
   if (path==='/api/logs'){ if(m==='DELETE'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));D.logs=[];_sv();return{ok:true};} return{logs:D.logs||[]};}
-  if (path==='/api/admins'&&m==='GET'){var aa=[];for(var ux in D.users){if(D.users[ux].role==='admin')aa.push({username:ux,name:D.users[ux].name});}return{admins:aa};}
-  if (path==='/api/admins'&&m==='POST'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));if(D.users[b.username])return Promise.reject(new Error('用户已存在'));return _hp(b.password||'').then(function(hp){D.users[b.username]={password:hp,role:'admin',name:b.name||b.username};_lg('新增管理员','新增管理员'+b.username);_sv();return{ok:true};});}
-  if (m==='DELETE'&&path.indexOf('/api/admins/')===0){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));var u4=decodeURIComponent(path.replace('/api/admins/',''));if(!D.users[u4])return Promise.reject(new Error('管理员不存在'));delete D.users[u4];_sv();return{ok:true};}
-  if (path==='/api/admins/password'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));if(!D.users[b.username])return Promise.reject(new Error('用户不存在'));return _hp(b.newPassword||'').then(function(hp){D.users[b.username].password=hp;_sv();return{ok:true};});}
   if (path==='/api/students'&&m==='POST'){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));var n3=(b.name||'').trim();if(!n3)return Promise.reject(new Error('请输入姓名'));if(D.students.indexOf(n3)>=0)return Promise.reject(new Error('该学生已存在'));D.students.push(n3);D.scores[n3]=15;_lg('新增学生','新增学生'+n3);_sv();return{students:D.students,ok:true};}
   if (m==='DELETE'&&path.indexOf('/api/students/')===0){if(!_isS())return Promise.reject(new Error('需要超级管理员权限'));var n4=decodeURIComponent(path.replace('/api/students/',''));var idx=D.students.indexOf(n4);if(idx<0)return Promise.reject(new Error('学生不存在'));D.students.splice(idx,1);delete D.scores[n4];_sv();return{students:D.students,ok:true};}
   throw new Error('未知 API: '+path);
@@ -141,7 +137,6 @@ async function loadApp() {
     const isAdmin = role === "super_admin" || role === "admin";
     document.getElementById("adminTools").style.display = isAdmin ? "block" : "none";
     document.getElementById("superAdminSection").style.display = role === "super_admin" ? "block" : "none";
-    document.getElementById("adminMgmtSection").style.display = role === "super_admin" ? "block" : "none";
     document.getElementById("resetSection").style.display = role === "super_admin" ? "block" : "none";
     document.getElementById("clearLogBtn").style.display = role === "super_admin" ? "inline-block" : "none";
 
@@ -167,8 +162,6 @@ async function loadApp() {
     renderStudentGrid();
     updateDeleteSelect();
     if (role === "super_admin") {
-      updateAdminList();
-      updatePasswordSelect();
     }
     setInterval(updateDateTime, 10000);
   } catch (e) {
@@ -512,75 +505,6 @@ function updateDeleteSelect() {
 // ============================================================
 // 管理员管理（超级管理员）
 // ============================================================
-async function updateAdminList() {
-  if (state.user.role !== "super_admin") return;
-  try {
-    const data = await api("/api/admins");
-    const list = document.getElementById("adminList");
-    if (!list) return;
-    if (data.admins.length === 0) {
-      list.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">暂无其他管理员</div>';
-    } else {
-      list.innerHTML = data.admins.map(a =>
-        `<div class="admin-item">
-          <span>${a.name || a.username} (@${a.username})</span>
-          <button class="btn btn-small btn-danger" onclick="deleteAdmin('${a.username}')">删除</button>
-        </div>`
-      ).join("");
-    }
-  } catch {}
-}
-
-async function addAdmin() {
-  const username = document.getElementById("newAdminUser").value.trim();
-  const password = document.getElementById("newAdminPass").value;
-  const name = document.getElementById("newAdminName").value.trim() || username;
-  if (!username || !password) return alert("请输入用户名和密码");
-  try {
-    await api("/api/admins", { method: "POST", body: JSON.stringify({ username, password, name }) });
-    document.getElementById("newAdminUser").value = "";
-    document.getElementById("newAdminPass").value = "";
-    document.getElementById("newAdminName").value = "";
-    await updateAdminList();
-    updatePasswordSelect();
-    alert("✅ 管理员已添加");
-  } catch (e) { alert(e.message); }
-}
-
-async function deleteAdmin(username) {
-  if (!confirm(`确定删除管理员「${username}」？`)) return;
-  try {
-    await api(`/api/admins/${encodeURIComponent(username)}`, { method: "DELETE" });
-    await updateAdminList();
-    updatePasswordSelect();
-    alert("✅ 已删除");
-  } catch (e) { alert(e.message); }
-}
-
-async function changeAdminPassword() {
-  const username = document.getElementById("changePassUser").value;
-  const newPassword = document.getElementById("newPassword").value;
-  if (!username || !newPassword) return alert("请选择用户并输入新密码");
-  try {
-    await api("/api/admins/password", { method: "POST", body: JSON.stringify({ username, newPassword }) });
-    document.getElementById("newPassword").value = "";
-    alert("✅ 密码已修改");
-  } catch (e) { alert(e.message); }
-}
-
-async function updatePasswordSelect() {
-  try {
-    const data = await api("/api/admins");
-    const sel = document.getElementById("changePassUser");
-    if (!sel) return;
-    sel.innerHTML = '<option value="">选择用户</option>';
-    sel.innerHTML += '<option value="super">👑 超级管理员</option>';
-    data.admins.forEach(a => {
-      sel.innerHTML += `<option value="${a.username}">🔧 ${a.name || a.username}</option>`;
-    });
-  } catch {}
-}
-
 // ============================================================
 // 日历管理
 // ============================================================

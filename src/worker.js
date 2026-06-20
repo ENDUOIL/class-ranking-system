@@ -52,30 +52,17 @@ const DEFAULT_CALENDAR = {
 // 初始化 KV（首次部署时写入默认数据）
 // ============================================================
 async function ensureInitialized(env) {
-  const existingStudents = await getKV(env, "students");
-  if (existingStudents && existingStudents.length > 0) return;
+  // Always set users first (ensures passwords stay current across deployments)
   const superHash = await hashPassword("yangjian1");
   const adminHash2 = await hashPassword("251");
-const users = {
-  super: { password: superHash, role: "super_admin", name: "超级管理员" },
-  admin: { password: adminHash2, role: "admin", name: "管理员" }
-};
+  const users = {
+    super: { password: superHash, role: "super_admin", name: "超级管理员" },
+    admin: { password: adminHash2, role: "admin", name: "管理员" }
+  };
   await setKV(env, "users", users);
-  await setKV(env, "students", DEFAULT_STUDENTS);
-  const scores = {};
-  DEFAULT_STUDENTS.forEach(s => scores[s] = 15);
-  await setKV(env, "scores", scores);
-  await setKV(env, "logs", []);
-  await setKV(env, "calendar", DEFAULT_CALENDAR);
-  await setKV(env, "phoneOptOuts", {});
-  await setKV(env, "todayDeductions", {});
-  await setKV(env, "punishData", { punishRecords: {}, maxDoneLevel: {} });
-  await setKV(env, "_initialized", "yes");
-}
 
-// ============================================================
-// Auth 中间件
-// ============================================================
+  const existingStudents = await getKV(env, "students");
+  if (existingStudents && existingStudents.length > 0) return;
 async function authMiddleware(c, next) {
   const auth = c.req.header("Authorization") || "";
   const token = auth.replace("Bearer ", "");
