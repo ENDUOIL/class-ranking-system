@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -750,7 +750,7 @@ select.input { cursor: pointer; }
   </div>
 </div>
 
-<script>window.__INIT__={"students":["包顺通","郑清颢","邹仁泽","秦韵贺","赵巍霖","王晨旭","张广涛","程泓博","姜乙丰","唐佳奇","赵梓渤","吴俊霖","王译广"],"scores":{"包顺通":15,"郑清颢":15,"邹仁泽":15,"秦韵贺":15,"赵巍霖":15,"王晨旭":15,"张广涛":15,"程泓博":15,"姜乙丰":15,"唐佳奇":15,"赵梓渤":15,"吴俊霖":15,"王译广":15},"punishData":{"punishRecords":{},"maxDoneLevel":{}},"phoneOptOuts":{},"todayDeductions":{},"logs":[],"calendar":{"excludedWeekdays":[5,6,7],"periods":[{"start":"12-28","end":"03-03","label":"寒假","skipYearBoundary":true},{"start":"07-05","end":"09-03","label":"暑假","skipYearBoundary":false}],"customExclusions":[],"customInclusions":[]}};</script><script>﻿// ============================================================
+<script>window.__INIT__={"students":["包顺通","郑清颢","邹仁泽","秦韵贺","赵巍霖","王晨旭","张广涛","程泓博","姜乙丰","唐佳奇","赵梓渤","吴俊霖","王译广"],"scores":{"包顺通":15,"郑清颢":15,"邹仁泽":15,"秦韵贺":15,"赵巍霖":15,"王晨旭":15,"张广涛":15,"程泓博":15,"姜乙丰":15,"唐佳奇":15,"赵梓渤":15,"吴俊霖":15,"王译广":15},"punishData":{"punishRecords":{},"maxDoneLevel":{}},"phoneOptOuts":{},"todayDeductions":{},"logs":[],"calendar":{"excludedWeekdays":[5,6,7],"periods":[{"start":"12-28","end":"03-03","label":"寒假","skipYearBoundary":true},{"start":"07-05","end":"09-03","label":"暑假","skipYearBoundary":false}],"customExclusions":[],"customInclusions":[]}};</script><script>// ============================================================
 // 25.1班操行排位赛 - 前端逻辑
 // ============================================================
 const API = "";
@@ -1686,6 +1686,21 @@ document.addEventListener("click", e => {
     e.target.style.display = "none";
   }
 });
+
+
+function toggleTheme() {
+  var root = document.documentElement;
+  root.setAttribute("data-theme", root.getAttribute("data-theme") === "light" ? "" : "light");
+  localStorage.setItem("classRankTheme", root.getAttribute("data-theme"));
+  var btn = document.getElementById("themeToggle");
+  if (btn) btn.textContent = root.getAttribute("data-theme") === "light" ? "☀️ 日间" : "🌙 夜间";
+}
+function initTheme() {
+  var saved = localStorage.getItem("classRankTheme") || "";
+  document.documentElement.setAttribute("data-theme", saved);
+  var btn = document.getElementById("themeToggle");
+  if (btn) btn.textContent = saved === "light" ? "☀️ 日间" : "🌙 夜间";
+}
 </script>
 </body>
 </html>
